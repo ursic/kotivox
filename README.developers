@@ -1,0 +1,83 @@
+Kotivox is written in D language and compiled by Digital Mars D Compiler v1.033.
+
+To prepare development environment, follow these instructions found at
+http://dsource.org/projects/dwt/wiki/Installation:
+
+Recommended DWT Installation on Linux
+
+1.  Create a new empty directory without spaces in the name.
+2.  Download and extract tango
+    http://downloads.dsource.org/projects/tango/0.99.7/tango-0.99.7-bin-linux-dmd.1.033.tar.gz,
+    rename the "tango-0.99.7-bin-linux-dmd.1.033" to "tango"
+3.  Download and extract dsss
+    http://www.dsource.org/projects/dsss/browser/downloads/0.75/dsss-0.75-dmd-gnuWlinux-x86.tar.gz,
+    rename the "dsss-0.75-dmd-gnuWlinux-x86" to "dsss"
+4.  Ensure your linux distro has the packages "libgtk2.0-dev", "libxtst-dev", "libgnomeui-dev"
+    installed (these are the names used in ubuntu linux)
+5.  Download and extract the latest DWT release
+    http://dsource.org/projects/dwt/wiki/Releases#Latest
+    (or as an option get the development snapshot from the HG repositories)
+6.  The directory has now "tango", "dsss", "dwt-win", "dwt-linux", "dwt-addons", "dwt-samples"
+7.  In an editor open dsss/etc/rebuild/default and edit to "dmd-posix-tango"
+8.  In an editor open dsss/etc/rebuild/dmd-posix-tango, search for "oneatatime" and change to "no" (twice!)
+9.  Open a console and set the system path with "export PATH=`pwd`/dsss/bin:`pwd`/tango/bin:$PATH"
+10. cd into dwt-samples/examples
+11. run "dsss build -dc=dmd-posix-tango -full -I../../dwt-linux controlexample/ControlExample.d"
+    (compilation should take about 20..30 sec)
+12. run the compiled example program "controlexample/ControlExample"
+
+
+LibTomCrypt is used for encryption, which you can obtain here:
+http://libtomcrypt.com/download.html
+
+
+Kotivox makes use of two new functions in DateTime widget to embolden
+days in calendar:
+
+/**
+   Places a visual marker on a particular day.
+ */
+public void markDay(int day)
+{
+    OS.gtk_calendar_mark_day(handle, day);
+}
+
+/**
+   Removes the visual marker from a particular day.
+*/
+public void unmarkDay(int day)
+{
+    OS.gtk_calendar_unmark_day(handle, day);
+}
+
+
+In order to suppress input method menu in text widget lines
+4202 and 4203 in Control.d have been commented out.
+
+
+Make sure Kotivox is linked against existing symbolic link to gtk-x11 library,
+such as libgtk-x11-2.0.so.0, for example.
+
+Comment out line 26 (pragma(link, "gtk-x11-2.0" );) in dwt-linux/dwt/DWT.d if necessary.
+If necessary, add the following function to dwt-linux/dwt/internal/c/gtk.d:
+
+char[] getGtkLibName()
+{
+    char[] libName = "libgtk-x11-2.0.so";
+    char[][] libDirs = ["/usr/lib/",
+			"/usr/local/lib/"];
+    char[][] libNames = ["libgtk-x11-2.0.so",
+			 "libgtk-x11-2.0.so.0"];
+    foreach(dir; libDirs)
+    {
+	foreach(lib; libNames)
+	{
+	    char[] fullPath = dir ~ lib;
+	    if((new FilePath(fullPath)).exists)
+		return lib;
+	}
+    }
+    return libName;
+}
+
+and replace line 60 with String libname = getGtkLibName;.
