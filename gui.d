@@ -1063,6 +1063,7 @@ public class GUI
 		this.cal.setYear(date.year);
 		this.cal.setMonth(date.month - 1);
 		this.cal.setDay(date.day);
+		markCalendarDays(this.cal);
 		this.txtPad.setText(Storage.getText);
 		this.txtPad.setEditable(true);
 		this.txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
