@@ -213,23 +213,15 @@ public class GUI
     /*
       Remove style from text hugging the current line
      */
-    private void clearStyle(StyledText text,
-			    int currLineUp = 0,
-			    int currOffsetDown = 0,
-			    bool aboveClear = false,
-			    bool belowClear = false,
-			    int lastOffsetUp = -1)
+    private int clearStyle(StyledText text,
+			   int currLineUp = 0,
+			   int currOffsetDown = 0,
+			   bool aboveClear = false,
+			   bool belowClear = false,
+			   int lastUp = -1)
     {
-	// remove category names
-	if(belowClear && (0 <= lastOffsetUp))
-	{
-	    int length = text.getLine(text.getLineAtOffset(lastOffsetUp)).length;
-	    text.replaceTextRange(lastOffsetUp, length + 1, "");
-	    lastOffsetUp = -1;
-	}
-
- 	if(aboveClear && belowClear) return;
-	if((currLineUp < 0) && (text.getCharCount <= currOffsetDown)) return;
+ 	if(aboveClear && belowClear) return lastUp;
+	if((currLineUp < 0) && (text.getCharCount <= currOffsetDown)) return lastUp;
 
 	// remove style by line increments on current line and above
 	if(!aboveClear && (0 <= currLineUp))
@@ -237,10 +229,13 @@ public class GUI
 	    int start = text.getOffsetAtLine(currLineUp);
 	    if(text.getStyleRangeAtOffset(start))
 	    {
-		if(text.getStyleRangeAtOffset(start).fontStyle & DWT.BOLD)
-		    lastOffsetUp = start;
+		// remove style for "\n" character where new line
+		int inc = 0;
+		if((start + text.getLine(currLineUp).length + 1) < text.getCharCount)
+		    inc = 1;
 
-		text.setStyleRanges(start, text.getLine(currLineUp).length + 1, null, null);
+		text.setStyleRanges(start, text.getLine(currLineUp).length + inc, null, null);
+		lastUp = currLineUp;
 	    }
 	    else
 		aboveClear = true;
@@ -255,7 +250,7 @@ public class GUI
  		belowClear = true;
 	}
 
-	clearStyle(text, --currLineUp, ++currOffsetDown, aboveClear, belowClear, lastOffsetUp);
+	return lastUp = clearStyle(text, --currLineUp, ++currOffsetDown, aboveClear, belowClear, lastUp);
     }
 
 
@@ -785,14 +780,31 @@ public class GUI
 		// caret is too far, nothing underneath anymore
 		if(this.txtPad.getCharCount <= this.txtPad.getCaretOffset)
 		{
-		    this.txtPad.setMenu(null);
-		    return;
+		    // move caret one character back
+		    if(0 < this.txtPad.getCaretOffset)
+		    {
+			// preserve selection
+			Point selection = this.txtPad.getSelection;
+			this.txtPad.setCaretOffset(this.txtPad.getCaretOffset - 1);
+			this.txtPad.setSelection(selection);
+		    }
+		    else
+		    {
+			this.txtPad.setMenu(null);
+			return;
+		    }
 		}
 		
 		Point selection = this.txtPad.getSelection;
 		int start = selection.x;
 		int length = selection.y - selection.x;
-		int end = selection.y;
+
+		// selection is past character count
+		if(this.txtPad.getCharCount <= start)
+		{
+		    this.txtPad.setMenu(null);
+		    return;
+		}
 
 		// no selection and no style underneath cursor - hide menu
 		if((length <= 0) && !this.txtPad.getStyleRangeAtOffset(start))
@@ -944,8 +956,21 @@ public class GUI
 
 		if(itemData.get("id") == CLEAR_ID)
 		{
-		    int startDown = this.txtPad.getOffsetAtLine(this.txtPad.getLineAtOffset(this.txtPad.getCaretOffset) + 1);
-		    clearStyle(this.txtPad, this.txtPad.getCaretLine, startDown);
+		    // set line to remove style down from
+		    int lineAtOffset = this.txtPad.getLineAtOffset(this.txtPad.getCaretOffset) + 1;
+		    if((this.txtPad.getLineCount - 1) < lineAtOffset)
+			lineAtOffset = this.txtPad.getLineCount - 1;
+
+		    int titlePos = clearStyle(this.txtPad,
+					      this.txtPad.getCaretLine,
+					      this.txtPad.getOffsetAtLine(lineAtOffset));
+		    if(-1 == titlePos)
+			titlePos = 0;
+		    
+		    // remove category names - paragraph title
+		    int length = this.txtPad.getLine(titlePos).length;
+		    this.txtPad.replaceTextRange(this.txtPad.getOffsetAtLine(titlePos), length + 1, "");
+
 		    return;
 		}   
 
@@ -1111,7 +1136,7 @@ public class GUI
         gdButtonToday.verticalAlignment = DWT.CENTER;
 	gdButtonToday.heightHint = MAIN_WINDOW_LEFT_COLUMN_BUTTON_HEIGHT;
 	setFont(cast(Control)bToday, FONT_SIZE_3, DWT.BOLD);
-	bToday.setText("Today");
+	bToday.setText(TODAY_TEXT);
         bToday.setLayoutData(gdButtonToday);
 
 	// Big text field on the right

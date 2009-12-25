@@ -84,6 +84,7 @@ public int SEARCH_RESULT_LENGTH = 80;
 // character length of single search result page
 public int SEARCH_RESULT_PAGE_LENGTH = 1400;
 
+public const char[] TODAY_TEXT = "Today";
 public const char[] SEARCH_BOX_TEXT = "Search...";
 
 public int INCREMENTAL_SEARCH_BOX_HEIGHT = 68;
