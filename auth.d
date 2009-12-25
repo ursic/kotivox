@@ -224,10 +224,7 @@ public class Auth
 
     static public bool isUserLoggedIn()
     {
-	if(userLoggedIn)
-	    return true;
-
-	return false;
+	return userLoggedIn;
     }
 }
 
