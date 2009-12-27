@@ -33,7 +33,7 @@ extern (C) char* decrypt_to_string(char *infile, char *outstring, char *tmpkey);
   Encrypt _infile using _key and AES cipher
   and write ciphered data into _outfile
  */
-void k_encrypt_file(char _infile[], char _outfile[], char _key[])
+void k_encrypt_file(char[] _infile, char[] _outfile, char[] _key)
 {
     char *key = toStringz(_key);
     char *infile = toStringz(_infile);
@@ -47,7 +47,7 @@ void k_encrypt_file(char _infile[], char _outfile[], char _key[])
   Decrypt _cipherfile using _key and AES cipher
   and write plaintext data into _outfile
  */
-void k_decrypt_file(char _cipherfile[], char _outfile[], char _key[])
+void k_decrypt_file(char[] _cipherfile, char[] _outfile, char[] _key)
 {
     char *key = toStringz(_key);
     char *cipherfile = toStringz(_cipherfile);
@@ -61,7 +61,7 @@ void k_decrypt_file(char _cipherfile[], char _outfile[], char _key[])
   Encrypt _instring using _key and AES cipher
   and write ciphered data into _outfile
  */
-void k_encrypt_from_string(char _instring[], char _outfile[], char _key[])
+void k_encrypt_from_string(char[] _instring, char[] _outfile, char[] _key)
 {
     char *key = toStringz(_key);
     char *instring = toStringz(_instring);
@@ -76,7 +76,7 @@ void k_encrypt_from_string(char _instring[], char _outfile[], char _key[])
   into string and point _oustring pointer to decrypted string
   Return decrypted string
  */
-char[] k_decrypt_to_string(char _infile[], char *_outstring, char _key[])
+char[] k_decrypt_to_string(char[] _infile, char *_outstring, char[] _key)
 {
     char *key = toStringz(_key);
     char *infile = toStringz(_infile);

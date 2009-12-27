@@ -51,6 +51,11 @@ public const char[] USER_CATEGORIES_FILE = "catnames.kc";
 public const char[] USER_CATEGORY_BACKGROUND_COLOR_SETTING_NAME = "categoryBackgroundColor";
 public const char[] USER_CATEGORY_BACKGROUND_COLOR = "231 239 255";
 
+public const char[] USERNAME_LABEL = "Username:";
+public const char[] PASSWORD_LABEL = "Password:";
+public const char[] PASSWORD_AGAIN_LABEL = "Password again:";
+public const char[] LOGIN_TEXT = "Login";
+public const char[] REGISTER_TEXT = "Register";
 public const char[] CATEGORIES_TEXT = "Categories";
 public const char[] NEW_CATEGORY_TEXT = "New category";
 public const char[] CLEAR_MENU_ITEM_TEXT = "Clear";

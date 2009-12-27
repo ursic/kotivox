@@ -27,8 +27,8 @@ import Clock = tango.time.Clock;
 import tango.stdc.stringz;
 import Unicode = tango.text.Unicode;
 
-
 extern (C) char* day_name(char* date, int year, int month, int day);
+
 
 /*
   Return formatted date string
@@ -75,7 +75,7 @@ char[] dateToFileName(int _year, int _month, int _day)
   First value in line separated from the rest
   of the line by space is key in array
  */
-char[][char[]] parseLines(in char str[])
+char[][char[]] parseLines(in char[] str)
 {
     char[][char[]] result;
 

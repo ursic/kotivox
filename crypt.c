@@ -503,7 +503,6 @@ char* decrypt_to_string(const char *infile,
     int size_f = ftell(fin);
     rewind(fin);
     char outstring[(int)(size_f + floor(size_f * 0.5))];
-
     outstring[0] = '\0';
 
     /* register hash */

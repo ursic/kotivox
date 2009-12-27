@@ -471,14 +471,16 @@ public class GUI
 
 	GridData gd1 = new GridData(GridData.FILL_HORIZONTAL);
 	Label lUsernameL = new Label(formGroup, DWT.LEFT);
-	lUsernameL.setText("Username:");
+	lUsernameL.setText(USERNAME_LABEL);
         lUsernameL.setLayoutData(gd1);
+
+	
 
 	Label lBlank1 = new Label(formGroup, DWT.NONE);
         lBlank1.setLayoutData (gd1);
 
 	Label lUsernameR = new Label(formGroup, DWT.LEFT);
-	lUsernameR.setText("Username:");
+	lUsernameR.setText(USERNAME_LABEL);
         lUsernameR.setLayoutData(gd1);
 
 	GridData gd2 = new GridData(GridData.FILL_BOTH);
@@ -501,7 +503,7 @@ public class GUI
 
 	GridData gd3 = new GridData(GridData.FILL_BOTH);
 	Label lPasswordL = new Label(formGroup, DWT.LEFT);
-	lPasswordL.setText("Password:");
+	lPasswordL.setText(PASSWORD_LABEL);
         lPasswordL.setLayoutData(gd3);
 
 	Label lBlank3 = new Label(formGroup, DWT.CENTER);
@@ -509,7 +511,7 @@ public class GUI
 	lBlank3.setText("OR");
 
 	Label lPasswordR = new Label(formGroup, DWT.LEFT);
-	lPasswordR.setText("Password:");
+	lPasswordR.setText(PASSWORD_LABEL);
         lPasswordR.setLayoutData(gd3);
 
 	GridData gd4 = new GridData(GridData.FILL_BOTH);
@@ -555,7 +557,7 @@ public class GUI
 
 	GridData gd8 = new GridData(GridData.FILL_BOTH);
 	Button bLogin = new Button(formGroup, DWT.BORDER);
-	bLogin.setText("Login");
+	bLogin.setText(LOGIN_TEXT);
 	gd8.widthHint = this.gridDataWidthHint;
         bLogin.setLayoutData(gd8);
 
@@ -563,7 +565,7 @@ public class GUI
         lBlank13.setLayoutData(gd8);
 
 	Button bRegister = new Button(formGroup, DWT.BORDER);
-	bRegister.setText("Register");
+	bRegister.setText(REGISTER_TEXT);
         bRegister.setLayoutData(gd8);
 
 	// set font for all form children
