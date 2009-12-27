@@ -1,21 +1,15 @@
 /*****************************************************************************
  *
- *   Kotivox
+ *   Adapted for Kotivox
  * 
- *   Copyright 2009 Mitja Ursic
- *   mitja_ursic@yahoo.com
- * 
- *   Licensed under the Apache License, Version 2.0 (the "License");
- *   you may not use this file except in compliance with the License.
- *   You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- *   Unless required by applicable law or agreed to in writing, software
- *   distributed under the License is distributed on an "AS IS" BASIS,
- *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *   See the License for the specific language governing permissions and
- *   limitations under the License.
+ *   Copyright 2009 R Samuel Klatchko
+ *   
+ *   On Stack Overflow:
+ *   http://stackoverflow.com/users/29809/r-samuel-klatchko
+ *   http://stackoverflow.com/questions/1727549/linux-datetime-locale-library-in-c
+ *   
+ *   Licensed under Attribution-Share Alike 3.0 Unported
+ *   http://creativecommons.org/licenses/by-sa/3.0/
  *
  *****************************************************************************/
 
