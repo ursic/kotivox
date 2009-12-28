@@ -65,12 +65,9 @@ public const int MAX_CATEGORY_NAME_LENGTH = 30;
 
 public const int KEY_ENTER = 13;
 public const int KEY_ESC = 27;
-public const int KEY_C = 99;
 public const int KEY_F = 102;
 public const int KEY_R = 114;
 public const int KEY_S = 115;
-public const int KEY_V = 118;
-public const int KEY_X = 120;
 
 public char[] APP_DIR;
 
