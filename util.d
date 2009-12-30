@@ -26,6 +26,7 @@ import Txt = tango.text.Util;
 import Clock = tango.time.Clock;
 import tango.stdc.stringz;
 import Unicode = tango.text.Unicode;
+import tango.core.Array;
 
 extern (C) char* day_name(char* date, int year, int month, int day);
 
@@ -150,4 +151,17 @@ char[] toUtf8(char[] string)
 	str ~= dst;
     }
     return str;
+}
+
+
+/*
+  Returns first free index in given array.
+*/
+int getFreeSlot(int[] indices)
+{
+    int i = 0;
+    for(i = 0; i < indices.length + 1; i++)
+	if(!contains(indices, i)) return i;
+
+    return i;
 }

@@ -742,12 +742,12 @@ public class GUI
 		    drawIncrementalFindInput(this.txtPad);
 
 		// Refresh text pad content - DEBUG
-		if(this.txtPad.getEditable &&
-		   (((event.stateMask & DWT.CTRL) == DWT.CTRL) && (KEY_R == event.keyCode)))
-		{
- 		    this.txtPad.setText(Storage.getText);
- 		    this.txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
-		}
+// 		if(this.txtPad.getEditable &&
+// 		   (((event.stateMask & DWT.CTRL) == DWT.CTRL) && (KEY_R == event.keyCode)))
+// 		{
+//  		    this.txtPad.setText(Storage.getText);
+//  		    this.txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
+// 		}
 	    }
 	    public void keyReleased(KeyEvent event){}
 	});
@@ -829,8 +829,7 @@ public class GUI
 		    return;
 		}
 
-		// selected text is not associated with any category
-		// show menu
+		// selected text is not associated with any category - show menu
 		if((0 < length) && !this.txtPad.getStyleRangeAtOffset(start))
 		{
 		    this.txtPad.setMenu(this.txtPadMenu);
@@ -925,7 +924,6 @@ public class GUI
 			Data itemData = cast(Data)item.getData;
 			if(SEPARATOR_ID == itemData.get("id"))
 			    item.dispose;
-
 			if(CLEAR_ID == itemData.get("id"))
 			    item.dispose;
 		    }
@@ -1033,7 +1031,11 @@ public class GUI
 					  Composite catEditList,
 					  DateTime calendar)
     {
-	textSearch.addKeyListener(new class(rightComposite, textSearch, textPad, catEditList, calendar) KeyListener
+	textSearch.addKeyListener(new class(rightComposite,
+					    textSearch,
+					    textPad,
+					    catEditList,
+					    calendar) KeyListener
 	{
 	    Composite _rightComposite;
 	    Text txtSearch;
@@ -1208,7 +1210,7 @@ public class GUI
 	c.setLayout(new FillLayout(DWT.VERTICAL));
 	GridData gdc = new GridData(DWT.LEFT, DWT.TOP, true, true);
 	gdc.widthHint = MAIN_WINDOW_LEFT_COLUMN_WIDTH;
-	gdc.heightHint = 300;
+	gdc.heightHint = CATEGORY_LIST_HEIGHT;
 	c.setLayoutData(gdc);
 	ScrolledComposite sc = new ScrolledComposite(c, DWT.V_SCROLL);
 	Composite catEditList = new Composite(sc, DWT.NONE);
@@ -1249,7 +1251,7 @@ public class GUI
 
 	// populate category list box with saved user categories
 	char[][] category;
-	while((category = Storage.getCategory) !is null)
+	while(null !is (category = Storage.getCategory))
 	{
 	    char[] id = category[0];
 	    char[] name = category[1];
@@ -1378,6 +1380,29 @@ public class GUI
 		this._sc.setMinSize(this._catEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
 	    }
 	});
+
+	Composite notesEditGroup = new Composite(leftComposite, DWT.NONE);
+	notesEditGroup.setLayout(new GridLayout(2, false));
+
+	GridData gdNote1 = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH - 58, DWT.DEFAULT);
+	Label lNotes = new Label(notesEditGroup, DWT.NONE);
+	lNotes.setLayoutData(gdNote1);
+	setFont(cast(Control)lNotes, FONT_SIZE_1, DWT.BOLD);
+        lNotes.setText(NOTES_TEXT);
+
+	GridData gdNote2 = new GridData(44, DWT.DEFAULT);
+	Button noteAdd = new Button(notesEditGroup, DWT.LEFT);
+	noteAdd.setLayoutData(gdNote2);
+	setFont(cast(Control)noteAdd, FONT_SIZE_2, DWT.BOLD);
+        noteAdd.setText("+ —");
+	noteAdd.setToolTipText(ADD_REMOVE_BUTTON_TOOLTIP);
+
+	Composite n = new Composite(leftComposite, DWT.NONE);
+	n.setLayout(new FillLayout(DWT.VERTICAL));
+	GridData gdn = new GridData(DWT.LEFT, DWT.TOP, true, true);
+	gdn.widthHint = MAIN_WINDOW_LEFT_COLUMN_WIDTH;
+	gdn.heightHint = CATEGORY_LIST_HEIGHT;
+	n.setLayoutData(gdn);
 
 	GridData gdButtonExit = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH, DWT.BOTTOM);
 	Button bExit = new Button(leftComposite, DWT.BORDER);

@@ -57,7 +57,7 @@ void saveConfig(char[] path = "")
     char[] configFilePath = path;
     if("" == configFilePath)
     {
-	// make output directory when if nonexistent
+	// make output directory when nonexistent
 	FilePath outputDir = new FilePath(CONFIG_DIR);
 	if (!outputDir.exists)
 	    outputDir.createFolder;

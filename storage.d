@@ -21,11 +21,13 @@
 
 module storage;
 
-import tango.io.Stdout;
 import tango.io.FileScan;
 import tango.core.Array;
 import Txt = tango.text.Util;
 import Integer = tango.text.convert.Integer;
+import tango.io.digest.Sha512;
+
+import tango.io.Stdout;
 
 import dwt.DWT;
 import dwt.widgets.DateTime;
@@ -34,7 +36,6 @@ import config;
 import util;
 import auth;
 import crypt;
-
 
 private class Day
 {
@@ -70,13 +71,8 @@ private class Day
 	    char[] text = k_decrypt_to_string(file.path ~ file.file, textp, Auth.cipherKey);
 	    foreach(char c; text) textOut ~= c;
 
-	    Day.addDay(file.name, textOut);
+	    days ~= new Day(file.name, textOut);
 	}
-    }
-
-    static private void addDay(char[] dayName, char[] text)
-    {
-	days ~= new Day(dayName, text);
     }
 
     static private bool dayExists(char[] dayName)
@@ -156,22 +152,11 @@ private class Category
 	return catName;
     }
 
-    /*
-      Returns id of next free slot in Categories array.
-    */
-    static private int getNewCategoryId()
+    static private int[] getIds()
     {
-	int catId = 0;
-	int ids[];
-
-	// get category IDs
-	foreach(Category c; categories) ids ~= c.id;
-
-	// return free id slot
-	for(int i = 0; i < categories.length + 1; i++)
-	    if(!contains(ids, i)) return i;
-
-	return catId;
+	int[] ids;
+	foreach(c; categories) ids ~= c.id;
+	return ids;
     }
 
     /*
@@ -180,7 +165,7 @@ private class Category
     */
     static private int addCategory(char[] name)
     {
-	int id = getNewCategoryId;
+	int id = getFreeSlot(getIds);
 	categories ~= new Category(id, sanitizeCategoryName(name));
 	return id;
     }
@@ -200,9 +185,6 @@ private class Category
 	categories = new_categories;
     }
 
-    /*
-      Assign name to category with matching id.
-    */
     static private void renameCategory(int id, char[] name)
     {
 	foreach(Category c; categories)
@@ -235,8 +217,7 @@ private class Category
 	if(content.length <= 0)
 	{
 	    FilePath catFile = new FilePath(catFileName);
-	    if(catFile.exists)
-		catFile.remove;
+	    if(catFile.exists) catFile.remove;
 
 	    return;
 	}
@@ -496,10 +477,6 @@ private class SearchResultPage
 		    if((location + keywordStr.length + appendLength) <= day.text.length)
 			tail = day.text[location + keywordStr.length..location + keywordStr.length + appendLength];
 
-		    // store keywordStr for search title atop first page
-// 		    if(0 == numResults)
-// 			keywordStr(keywordStr);
-
 		    int year = Integer.toInt(day.name[0..4]);
 		    int month = Integer.toInt(day.name[4..6]);
 		    int mday = Integer.toInt(day.name[6..8]);
@@ -554,6 +531,163 @@ private class SearchResultPage
 }
 
 
+private class Note
+{
+    private int id;
+    private char[] name;
+    private char[] filename;
+    private char[] content;
+
+    static private Note[] notes;
+
+    this(int id, char[] name, char[] content = "")
+    {
+	this.id = id;
+	this.name = sanitizeNoteName(name);
+	this.filename = getFileName(id, this.name);
+	this.content = content;
+    }
+
+    static private int addNote(char[] name)
+    {
+	int id = getFreeSlot(getIds);
+	notes ~= new Note(id, name);
+	return id;
+    }
+
+    /*
+      Removes note of given id from notes array.
+    */
+    static private void removeNote(int id)
+    {
+	Note new_notes[];
+	foreach(note; notes)
+	{
+	    if(note.id == id) continue;
+
+	    new_notes ~= note;
+	}
+	notes = new_notes;
+    }
+
+    static private void setNoteContent(int id, char[] content)
+    {
+	foreach(n; notes)
+	{
+	    if(n.id == id)
+	    {
+		n.content = content;
+		break;
+	    }
+	}
+    }
+
+    static private char[] getNoteContent(int id)
+    {
+	foreach(n; notes)
+	    if(n.id == id) return n.content;
+	return "";
+    }
+
+    static private int[] getIds()
+    {
+	int[] ids;
+	foreach(n; notes) ids ~= n.id;
+	return ids;
+    }
+
+    /*
+      Shorten and trim note title to first 20 characters.
+    */
+    static private char[] sanitizeNoteName(char[] name)
+    {
+	char[] noteName = name;
+	if(MAX_CATEGORY_NAME_LENGTH < name.length)
+	    noteName = name[0..MAX_CATEGORY_NAME_LENGTH];
+	noteName = Txt.trim(noteName);
+	return noteName;
+    }
+
+    /*
+      Generate and return file name based upon note name and its id
+    */
+    static private char[] getFileName(int id, char[] name)
+    {
+	char[] inStr = name ~ "-" ~ Integer.toString(id);
+	Sha512 digest = new Sha512;
+	digest.update(cast(ubyte[])inStr);
+	char[] filename = digest.hexDigest();
+	filename = filename[0..8] ~ NOTE_FILE_EXTENSION;
+	return filename;
+    }
+
+
+    /*
+      Encrypt notes into files.
+     */
+    static private void saveNotes()
+    {
+	foreach(note; notes)
+	{
+	    char[] noteFilePath = Auth.userDirPath ~ note.filename;
+	    char[] name = Txt.trim(note.name);
+	    
+	    // skip note with empty name
+	    if(name.length <= 0)
+	    {
+		// delete note file if exists
+		FilePath noteFile = new FilePath(noteFilePath);
+		if(noteFile.exists) noteFile.remove;		
+
+		continue;
+	    }
+
+	    // Write name of the note and its index
+	    // number on the top line of its content. -- a very primitive header
+	    char[] content = note.name ~ " " ~ Integer.toString(note.id) ~ "\n" ~ note.content;
+	    k_encrypt_from_string(content,
+				  noteFilePath,
+				  Auth.cipherKey);    
+	}
+    }
+
+    /*
+      Decrypt notes from files.
+     */
+    static private void loadNotes()
+    {
+	auto scan = new FileScan;
+	scan(Auth.userDirPath, NOTE_FILE_EXTENSION);
+	foreach(file; scan.files)
+	{
+	    // decrypt text and store it
+	    char *textp;
+	    char[] textOut;
+	    char[] text = k_decrypt_to_string(file.path ~ file.file, textp, Auth.cipherKey);
+	    foreach(char c; text) textOut ~= c;
+
+	    char[][] lines = Txt.splitLines(textOut);
+
+	    // First line is primitive header containing note's name and index.
+	    auto settings = Txt.split(lines[0], " ");
+
+	    // in case name contains spaces
+	    char[] name;
+	    for(int i = 0; i < settings.length - 1; i++) name ~= settings[i];
+
+	    // The rest of the lines is content.
+	    char[] content = "";
+	    for(int i = 1; i < lines.length; i++)
+		content ~= lines[i];
+
+	    notes ~= new Note(Integer.toInt(settings[settings.length - 1]),
+			      name,
+			      content);
+	}
+    }
+}
+
+
 public class Storage
 {
     /*
@@ -561,7 +695,7 @@ public class Storage
      */
     static public void saveText(in char[] text)
     {
-	if(!Auth.isUserLoggedIn) return -1;
+	if(!Auth.isUserLoggedIn) return;
 
 	Day.daySetText(getTodayFileName, text);
     }
@@ -576,6 +710,7 @@ public class Storage
 
 	Category.saveCategories;
 	saveCategoryRanges(catRanges);
+	Note.saveNotes;
 
 	char[] textFilePath = Auth.userDirPath ~ getTodayFileName ~ USER_DAY_FILE_EXTENSION;
 
@@ -750,6 +885,7 @@ public class Storage
 	Day.loadDays;
 	Category.loadCategories;
 	loadCategoryRanges;
+	Note.loadNotes;
     }
 
 
@@ -804,5 +940,16 @@ public class Storage
 	}
 
 	return days;
+    }
+
+
+    static public int addNote(char[] name)
+    {
+	return Note.addNote(name);
+    }
+
+    static public void removeNote(int id)
+    {
+	Note.removeNote(id);
     }
 }

@@ -143,7 +143,7 @@ public class Auth
 	// does user's ident exist?
 	char[] ident = usernameToIdent(username);
 	userDirPath = APP_DIR ~ USER_DIR ~ "/" ~ ident ~ "/";
-	userConfig = userDirPath ~ "config.txt";
+	userConfig = userDirPath ~ CONFIG_FILE;
 
 	readConfig(userConfig);
 
@@ -188,36 +188,26 @@ public class Auth
 
 	// create root user dir if nonexistent
 	FilePath usersDir = new FilePath(usersDirPath);
-	if(!usersDir.exists)
-	  usersDir.createFolder;
+	if(!usersDir.exists) usersDir.createFolder;
 
 	char[] userDirPath = APP_DIR ~ USER_DIR ~ "/" ~ ident ~ "/";
-	userConfig = userDirPath ~ "config.txt";
-
-	FilePath userDir = new FilePath(userDirPath);
-	// create new user dir
-	userDir.createFolder;
+	(new FilePath(userDirPath)).createFolder;
 
 	// save password ident to configuration file
 	setConfig("ident", passwordToIdent(userData[1]));
-	saveConfig(userConfig);
+	saveConfig(userDirPath ~ CONFIG_FILE);
     }
 
 
     static public bool register(char[][] userData, out char[] errorMsg)
     {
-	char[] msg;
 	if(Validator.validateUserData(userData, errorMsg))
 	{
 	    addNewUser(userData);
-
-	    // log in the new user
 	    readConfig(userConfig);
 	    char[] loginStatus;
-	    login(userData, loginStatus);
-	    return true;
+	    return login(userData, loginStatus);
 	}
-
 	return false;
     }
 

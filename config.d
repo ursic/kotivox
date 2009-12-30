@@ -44,6 +44,7 @@ public const int WINDOW_WIDTH = 810;
 public const int MAIN_WINDOW_LEFT_COLUMN_WIDTH = 240;
 public const int MAIN_WINDOW_CALENDAR_HEIGHT = 200;
 public const int MAIN_WINDOW_LEFT_COLUMN_BUTTON_HEIGHT = 40;
+public const int CATEGORY_LIST_HEIGHT = 300;
 
 public const char[] USER_DAY_FILE_EXTENSION = ".kt";
 public const char[] USER_CATEGORY_RANGES_FILE_EXTENSION = ".kcr";
@@ -90,3 +91,6 @@ public const char[] TODAY_TEXT = "Today";
 public const char[] SEARCH_BOX_TEXT = "Search...";
 
 public int INCREMENTAL_SEARCH_BOX_HEIGHT = 68;
+
+public const char[] NOTE_FILE_EXTENSION = ".kn";
+public const char[] NOTES_TEXT = "Notes";
