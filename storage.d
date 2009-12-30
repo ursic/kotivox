@@ -26,7 +26,6 @@ import tango.io.FileScan;
 import tango.core.Array;
 import Txt = tango.text.Util;
 import Integer = tango.text.convert.Integer;
-import Time = tango.time.ISO8601;
 
 import dwt.DWT;
 import dwt.widgets.DateTime;
@@ -337,13 +336,24 @@ private class SearchResultPage
     private int index;
     private char[] content;
 
-    static char[] _keywords;
+    static char[] txtKeywords;
     static SearchResultPage[] resultPages;
 
     this(int index, char[] content)
     {
 	this.index = index;
-	this.content = content;
+	this.content = Txt.substitute(content, "&", "&&");
+    }
+
+    // save keywords for display later, replace & with &&
+    static void keywords(char[] keywords)
+    {
+	this.txtKeywords = Txt.substitute(keywords, "&", "&&");
+    }
+
+    static char[] keywords()
+    {
+	return this.txtKeywords;
     }
 
     static int getNextIndex()
@@ -436,11 +446,12 @@ private class SearchResultPage
       Match texts of all days against keywords.
       Exclude categorized texts by default.
       Match against categorized text whose categories are provided in categories array.
-      Store search results in array, each element representing one result page
+      Store search results in array, each element representing one result page.
+      Return true if any results found, false otherwise.
 
-      Always return matches inside non-categorized text
+      Always return matches inside non-categorized text.
      */
-    static private bool compileSearchResults(char[] keywords, int[] categories)
+    static private bool compileSearchResults(char[] keywordStr, int[] categories)
     {
 	// clear previous search
 	resultPages = null;
@@ -456,10 +467,10 @@ private class SearchResultPage
 	    entry: do
 	    {
 		location = Txt.locatePattern(Unicode.toLower(day.text),
-					     Unicode.toLower(keywords),
+					     Unicode.toLower(keywordStr),
 					     location);
 		// match found
-		// prepend and append some text around keywords
+		// prepend and append some text around keywordStr
 		// prepend link above the result
 		if((0 == location) || (location < end))
 		{
@@ -469,7 +480,7 @@ private class SearchResultPage
 		    {
 			if(isInCategory(location, id, day))
 			{
-			    location += keywords.length;
+			    location += keywordStr.length;
 			    continue entry;
 			}
 		    }
@@ -480,21 +491,21 @@ private class SearchResultPage
 		    if(0 <= (location - appendLength))
 			head = day.text[location - appendLength..location];
 
-		    core = day.text[location..location + keywords.length];
+		    core = day.text[location..location + keywordStr.length];
 
-		    if((location + keywords.length + appendLength) <= day.text.length)
-			tail = day.text[location + keywords.length..location + keywords.length + appendLength];
+		    if((location + keywordStr.length + appendLength) <= day.text.length)
+			tail = day.text[location + keywordStr.length..location + keywordStr.length + appendLength];
 
-		    // store keywords for search title atop first page
-		    if(0 == numResults)
-			_keywords = keywords;
+		    // store keywordStr for search title atop first page
+// 		    if(0 == numResults)
+// 			keywordStr(keywordStr);
 
 		    int year = Integer.toInt(day.name[0..4]);
 		    int month = Integer.toInt(day.name[4..6]);
 		    int mday = Integer.toInt(day.name[6..8]);
 
 		    char[] date = day_name(year, month, mday);
-		    result ~= "<a href=\"JUMP" ~ day.name ~ Integer.toString(location) ~ "-" ~ keywords  ~ "\">" ~ date ~ "</a>\n";
+		    result ~= "<a href=\"JUMP" ~ day.name ~ Integer.toString(location) ~ "-" ~ this.keywords  ~ "\">" ~ date ~ "</a>\n";
 		    result ~= head ~ Unicode.toUpper(core) ~ tail;
 		    result ~= "\n\n";
 		    numResults++;
@@ -510,7 +521,7 @@ private class SearchResultPage
 
 		    result = "";
 		}
-		location += keywords.length;
+		location += keywordStr.length;
 	    }while(location < end);
 	}
 
@@ -744,11 +755,11 @@ public class Storage
 
     static public char[] search(char[] keywords, int[] categories)
     {
+	SearchResultPage.keywords(keywords);
  	if(keywords.length < SEARCH_KEYWORDS_MIN_LENGTH)
- 	    return "Search term \"" ~ keywords ~ "\" is too short. Make it at least 3 characters long.";
-
+ 	    return "Search term \"" ~ SearchResultPage.keywords ~ "\" is too short. Make it at least 3 characters long.";
 	if(!SearchResultPage.compileSearchResults(keywords, categories))
-	    return "Nothing found for \"" ~ keywords ~ "\".";
+	    return "Nothing found for \"" ~ SearchResultPage.keywords ~ "\".";
 
 	return "";
     }
@@ -769,7 +780,7 @@ public class Storage
 		    content = pager ~ "\n\n" ~ page.content ~ "\n" ~ pager;
 
 		if(0 == pageNum)
-		    content = "Search results for \"" ~ SearchResultPage._keywords ~ "\":\n\n" ~ content;
+		    content = "Search results for \"" ~ SearchResultPage.keywords ~ "\":\n\n" ~ content;
 		    
 		return content;
 	    }

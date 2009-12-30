@@ -1052,17 +1052,18 @@ public class GUI
 	    {
 		if(KEY_ENTER == event.keyCode)
 		{
-		    char[] keywords = this.txtSearch.getText;
-		    char[] searchResults;
-		    if(0 == (searchResults = Storage.search(keywords,
-							    getSelectedCategories(this.catList))).length)
-			// get the first page of search results
-			searchResults = Storage.getSearchResultPage;
-		    
+		    // Save current text so it becomes searchable,
+		    // and cannot be overwritten when jump to search result is made.
 		    if(this.txtPad.getEditable)
 			Storage.saveFinal(this.txtPad.getText,
 					  styleRangesToCategoryRanges(this.txtPad.getStyleRanges));
 
+		    char[] searchResults;
+		    // get the first search result page
+		    if(0 == (searchResults = Storage.search(this.txtSearch.getText,
+							    getSelectedCategories(this.catList))).length)
+			searchResults = Storage.getSearchResultPage;
+		    
 		    drawSearchResultsWindow(this._rightComposite, searchResults, this.txtPad, this.cal);
 		}
 	    }
