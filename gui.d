@@ -1103,6 +1103,26 @@ public class GUI
     }
 
 
+    private void addNoteNameModifyListener(Text textInput)
+    {
+	textInput.addModifyListener(new class(textInput) ModifyListener
+        {
+	    Text noteText;
+	    this(Text t)
+            {
+		this.noteText = textInput;
+	    }
+
+	    public void modifyText(ModifyEvent event)
+            {
+		Data data = cast(Data)this.noteText.getData;
+		int id = Integer.toInt(data.get("id"));
+		Storage.noteName(id, this.noteText.getText);
+	    }
+	});
+    }
+
+
     private void drawMainWindow(in Shell shell)
     {
 	foreach(child; shell.getChildren)
@@ -1216,6 +1236,7 @@ public class GUI
 	Composite catEditList = new Composite(sc, DWT.NONE);
 	catEditList.setLayout(new GridLayout(2, false));
 
+	// check or uncheck all categories
 	catCheck.addListener(DWT.Selection, new class(catCheck, catEditList) Listener
 	{
 	    Button _catCheck;
@@ -1243,7 +1264,7 @@ public class GUI
 
 	int catCheckWidth = 24;
 	int catListWidth = MAIN_WINDOW_LEFT_COLUMN_WIDTH - 60;
-	Color catTextBack = new Color(Display.getCurrent, 239, 239, 239);
+	Color catTextBack = getColor(CATEGORY_LIST_BACKGROUND_COLOR);
 
 	// right-click / context menu for text area
 	Menu textPadMenu = new Menu(cast(Decorations)shell);
@@ -1287,17 +1308,16 @@ public class GUI
         sc.setExpandHorizontal(true);
         sc.setExpandVertical(true);
 
-	catAdd.addListener(DWT.Selection, new class(catEditList, shell, sc, textPadMenu, textPad) Listener
+	// Add to or remove category from category list.
+	catAdd.addListener(DWT.Selection, new class(catEditList, sc, textPadMenu, textPad) Listener
 	{
 	    Composite _catEditList;
-	    Shell _shell;
 	    ScrolledComposite _sc;
 	    Menu txtPadMenu;
 	    StyledText txtPad;
-	    this(Composite c, Shell s, ScrolledComposite _s, Menu m, StyledText t)
+	    this(Composite c, ScrolledComposite _s, Menu m, StyledText t)
 	    {
 		this._catEditList = catEditList;
-		this._shell = shell;
 		this._sc = sc;
 		this.txtPadMenu = textPadMenu;
 		this.txtPad = textPad;
@@ -1345,10 +1365,8 @@ public class GUI
 		    int catCheckWidth = 24;
 		    int catListWidth = MAIN_WINDOW_LEFT_COLUMN_WIDTH - 60;
 
-		    char[] text = NEW_CATEGORY_TEXT;
-
 		    // id of new category
-		    char[] id = Integer.toString(Storage.addCategory(text));
+		    char[] id = Integer.toString(Storage.addCategory(NEW_CATEGORY_TEXT));
 
 		    GridData gdCheck = new GridData(catCheckWidth, DWT.DEFAULT);
 		    Button catCheck = new Button(this._catEditList, DWT.CHECK);
@@ -1360,9 +1378,9 @@ public class GUI
 		    Text catText = new Text(this._catEditList, DWT.NONE);
 		    setFont(cast(Control)catText, FONT_SIZE_1, DWT.NONE);
 		    catText.setData(new Data("id", id));
-		    catText.setText(text);
+		    catText.setText(NEW_CATEGORY_TEXT);
 		    catText.setLayoutData(gdText);
-		    catText.setBackground(new Color(Display.getCurrent, 239, 239, 239));
+		    catText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
 		    // prevent default menu
 		    catText.setMenu(new Menu(catText));
 		    addCategoryNameModifyListener(catText, this.txtPadMenu, this.txtPad);
@@ -1371,7 +1389,7 @@ public class GUI
 		    // 0 puts menu item on top of menu
 		    MenuItem catItem = new MenuItem(this.txtPadMenu, DWT.NONE, 0);
 		    catItem.setData(new Data("id", id));
-		    catItem.setText(text);
+		    catItem.setText(NEW_CATEGORY_TEXT);
 		    addMenuItemListener(catItem, this.txtPadMenu, this.txtPad, calendar);
 		}
 
@@ -1403,6 +1421,92 @@ public class GUI
 	gdn.widthHint = MAIN_WINDOW_LEFT_COLUMN_WIDTH;
 	gdn.heightHint = CATEGORY_LIST_HEIGHT;
 	n.setLayoutData(gdn);
+
+	ScrolledComposite scn = new ScrolledComposite(n, DWT.V_SCROLL);
+	Composite noteEditList = new Composite(scn, DWT.NONE);
+	noteEditList.setLayout(new GridLayout(1, false));
+
+	int noteListWidth = MAIN_WINDOW_LEFT_COLUMN_WIDTH - 60;
+	Color noteTextBack = getColor(CATEGORY_LIST_BACKGROUND_COLOR);
+
+	// populate note list box with saved user notes
+	foreach(id, name; Storage.getNotes)
+	{
+	    GridData gdNoteName = new GridData(noteListWidth, DWT.DEFAULT);
+	    Text noteText = new Text(noteEditList, DWT.NONE);
+	    setFont(cast(Control)noteText, FONT_SIZE_1, DWT.NONE);
+	    noteText.setLayoutData(gdNoteName);
+	    noteText.setData(new Data("id", Integer.toString(id)));
+	    noteText.setText(name);
+	    noteText.setBackground(noteTextBack);
+	    // prevent default menu
+	    noteText.setMenu(new Menu(noteText));
+	    addNoteNameModifyListener(noteText);
+	}
+
+        scn.setContent(noteEditList);
+	scn.setMinSize(noteEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
+        scn.setExpandHorizontal(true);
+        scn.setExpandVertical(true);	
+
+	// Add to or remove note from note list.
+	noteAdd.addListener(DWT.Selection, new class(noteEditList, scn, textPad) Listener
+	{
+	    Composite _noteEditList;
+	    ScrolledComposite _scn;
+	    StyledText txtPad;
+	    this(Composite c, ScrolledComposite _s, StyledText t)
+	    {
+		this._noteEditList = noteEditList;
+		this._scn = scn;
+		this.txtPad = textPad;
+	    }
+
+	    public void handleEvent(Event event)
+	    {
+		// Remove notes with empty names.
+		bool disposed = false;
+		foreach(Control c; this._noteEditList.getChildren)
+		{
+		    if("Text" == c.getName)
+		    {
+			Text t = cast(Text)c;
+ 			if(Txt.trim(t.getText).length <= 0)
+			{
+			    int id = Integer.toInt((cast(Data)t.getData).get("id"));
+			    Storage.removeNote(id);
+ 			    t.dispose;
+			    disposed = true;
+			}
+		    }
+		}
+
+		// Add new note if none have been disposed.
+		if(!disposed)
+		{
+		    int noteListWidth = MAIN_WINDOW_LEFT_COLUMN_WIDTH - 60;
+
+		    // id of new note
+		    char[] id = Integer.toString(Storage.addNote);
+		    char[] name = NOTES_TEXT ~ " " ~ id;
+
+		    GridData gdText = new GridData(noteListWidth, DWT.DEFAULT);
+		    Text noteText = new Text(this._noteEditList, DWT.NONE);
+		    setFont(cast(Control)noteText, FONT_SIZE_1, DWT.NONE);
+		    noteText.setData(new Data("id", id));
+		    noteText.setText(name);
+		    noteText.setLayoutData(gdText);
+		    noteText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+		    // prevent default menu
+		    noteText.setMenu(new Menu(noteText));
+		    addNoteNameModifyListener(noteText);
+		}
+
+		// redraw parent container
+		this._scn.setContent(this._noteEditList);
+		this._scn.setMinSize(this._noteEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
+	    }
+	});
 
 	GridData gdButtonExit = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH, DWT.BOTTOM);
 	Button bExit = new Button(leftComposite, DWT.BORDER);

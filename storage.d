@@ -61,9 +61,7 @@ private class Day
     static private void loadDays()
     {
 	// gather all day files for this user
-	auto scan = new FileScan;
-	scan(Auth.userDirPath, USER_DAY_FILE_EXTENSION);
-	foreach(file; scan.files)
+	foreach(file; (new FileScan)(Auth.userDirPath, USER_DAY_FILE_EXTENSION).files)
 	{
 	    // decrypt text and store it
 	    char *textp;
@@ -548,9 +546,10 @@ private class Note
 	this.content = content;
     }
 
-    static private int addNote(char[] name)
+    static private int addNote(char[] name = "")
     {
 	int id = getFreeSlot(getIds);
+	if(name.length <= 0) name = NOTES_TEXT ~ " " ~ Integer.toString(id);
 	notes ~= new Note(id, name);
 	return id;
     }
@@ -570,7 +569,28 @@ private class Note
 	notes = new_notes;
     }
 
-    static private void setNoteContent(int id, char[] content)
+    // Return note name.
+    static private char[] noteName(int id)
+    {
+	foreach(note; notes)
+	    if(note.id == id) return note.name;
+    }
+
+    // Set note name.
+    static private void noteName(int id, char[] name)
+    {
+	foreach(note; notes)
+	{
+	    if(note.id == id)
+	    {
+		note.name = sanitizeNoteName(name);
+		break;
+	    }
+
+	}
+    }
+
+    static private void noteContent(int id, char[] content)
     {
 	foreach(n; notes)
 	{
@@ -582,7 +602,7 @@ private class Note
 	}
     }
 
-    static private char[] getNoteContent(int id)
+    static private char[] noteContent(int id)
     {
 	foreach(n; notes)
 	    if(n.id == id) return n.content;
@@ -621,12 +641,12 @@ private class Note
 	return filename;
     }
 
-
     /*
       Encrypt notes into files.
      */
     static private void saveNotes()
     {
+	char[] noteFiles;
 	foreach(note; notes)
 	{
 	    char[] noteFilePath = Auth.userDirPath ~ note.filename;
@@ -647,8 +667,14 @@ private class Note
 	    char[] content = note.name ~ " " ~ Integer.toString(note.id) ~ "\n" ~ note.content;
 	    k_encrypt_from_string(content,
 				  noteFilePath,
-				  Auth.cipherKey);    
+				  Auth.cipherKey);
+	    noteFiles ~= noteFilePath;
 	}
+
+	// Remove obsolete note files.
+	foreach(file; (new FileScan)(Auth.userDirPath, NOTE_FILE_EXTENSION).files)
+	    if(!contains(noteFiles, file.path ~ file.file))
+		file.remove;
     }
 
     /*
@@ -656,9 +682,7 @@ private class Note
      */
     static private void loadNotes()
     {
-	auto scan = new FileScan;
-	scan(Auth.userDirPath, NOTE_FILE_EXTENSION);
-	foreach(file; scan.files)
+	foreach(file; (new FileScan)(Auth.userDirPath, NOTE_FILE_EXTENSION).files)
 	{
 	    // decrypt text and store it
 	    char *textp;
@@ -673,7 +697,7 @@ private class Note
 
 	    // in case name contains spaces
 	    char[] name;
-	    for(int i = 0; i < settings.length - 1; i++) name ~= settings[i];
+	    for(int i = 0; i < settings.length - 1; i++) name ~= " " ~ settings[i];
 
 	    // The rest of the lines is content.
 	    char[] content = "";
@@ -684,6 +708,13 @@ private class Note
 			      name,
 			      content);
 	}
+    }
+    
+    static private char[][int] getNotes()
+    {
+	char[][int] noteList;
+	foreach(note; notes) noteList[note.id] = note.name;
+	return noteList;
     }
 }
 
@@ -699,7 +730,6 @@ public class Storage
 
 	Day.daySetText(getTodayFileName, text);
     }
-
 
     /*
       Encrypt today's text to file.
@@ -731,7 +761,6 @@ public class Storage
 			      Auth.cipherKey);
     }
 
-
     /*
       Get decrypted text for date.
       Return today's text if date is null.
@@ -754,7 +783,6 @@ public class Storage
 	return text;
     }
 
-
     /*
       Encrypt category ranges into file.
      */
@@ -765,8 +793,7 @@ public class Storage
 	if(catRanges.length <= 0)
 	{
 	    FilePath catRangesFile = new FilePath(catRangesFileName);
-	    if(catRangesFile.exists)
-		catRangesFile.remove;
+	    if(catRangesFile.exists) catRangesFile.remove;
 
 	    Day.setCategoryRanges(getTodayFileName, catRanges);
 	    return;
@@ -790,17 +817,13 @@ public class Storage
 			      Auth.cipherKey);
     }
 
-
     /*
       Decrypt user category ranges.
      */
     static private void loadCategoryRanges()
     {
 	// gather all available category ranges
-	auto scan = new FileScan;
-	scan(Auth.userDirPath, USER_CATEGORY_RANGES_FILE_EXTENSION);
-
-	foreach(file; scan.files)
+	foreach(file; (new FileScan)(Auth.userDirPath, USER_CATEGORY_RANGES_FILE_EXTENSION).files)
 	{
 	    // decrypt category ranges into array
 	    char *textp;
@@ -824,42 +847,35 @@ public class Storage
 	}
     }
 
-
     static public char[][] getCategory()
     {
 	return Category.getCategory;
     }
-
 
     static public int addCategory(char[] name)
     {
 	return Category.addCategory(name);
     }
 
-
     static public void renameCategory(int id, char[] name)
     {
 	Category.renameCategory(id, name);
     }
-
 
     static public void removeCategory(int id)
     {
 	Category.removeCategory(id);
     }
 
-
     static public char[] getCategoryName(int id)
     {
 	return Category.getCategoryName(id);
     }
 
-
     static public int getCategoryID(char[] name)
     {
 	return Category.getCategoryID(name);
     }
-
 
     /*
       Return array of category ranges for given date.
@@ -877,7 +893,6 @@ public class Storage
 	return Day.getCategoryRanges(dayName);
     }
 
-
     static public void loadUserData()
     {
 	if(!Auth.isUserLoggedIn) return;
@@ -887,7 +902,6 @@ public class Storage
 	loadCategoryRanges;
 	Note.loadNotes;
     }
-
 
     static public char[] search(char[] keywords, int[] categories)
     {
@@ -899,7 +913,6 @@ public class Storage
 
 	return "";
     }
-
 
     /*
       Return requested result page
@@ -925,7 +938,6 @@ public class Storage
 	return "Search result page " ~ Integer.toString(pageNum) ~ " not found.";
     }
 
-
     /*
       Return array of day numbers of the month given calendar is set to
      */
@@ -942,8 +954,7 @@ public class Storage
 	return days;
     }
 
-
-    static public int addNote(char[] name)
+    static public int addNote(char[] name = "")
     {
 	return Note.addNote(name);
     }
@@ -951,5 +962,20 @@ public class Storage
     static public void removeNote(int id)
     {
 	Note.removeNote(id);
+    }
+
+    static public char[] noteName(int id)
+    {
+	return Note.noteName(id);
+    }
+
+    static public void noteName(int id, char[] name)
+    {
+	Note.noteName(id, name);
+    }
+
+    static public char[][int] getNotes()
+    {
+	return Note.getNotes;
     }
 }

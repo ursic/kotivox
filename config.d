@@ -50,6 +50,7 @@ public const char[] USER_DAY_FILE_EXTENSION = ".kt";
 public const char[] USER_CATEGORY_RANGES_FILE_EXTENSION = ".kcr";
 public const char[] USER_CATEGORIES_FILE = "catnames.kc";
 public const char[] USER_CATEGORY_BACKGROUND_COLOR_SETTING_NAME = "categoryBackgroundColor";
+public const char[] CATEGORY_LIST_BACKGROUND_COLOR = "239 239 239";
 public const char[] USER_CATEGORY_BACKGROUND_COLOR = "231 239 255";
 
 public const char[] USERNAME_LABEL = "Username:";
