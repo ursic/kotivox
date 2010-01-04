@@ -25,9 +25,6 @@ import tango.io.FileScan;
 import tango.core.Array;
 import Txt = tango.text.Util;
 import Integer = tango.text.convert.Integer;
-import tango.io.digest.Sha512;
-
-import tango.io.Stdout;
 
 import dwt.DWT;
 import dwt.widgets.DateTime;
@@ -36,6 +33,8 @@ import config;
 import util;
 import auth;
 import crypt;
+
+import tango.io.Stdout;
 
 private class Day
 {
@@ -231,12 +230,11 @@ private class Category
      */
     static private void loadCategories()
     {
-	// does categories file exist?
+	// Does categories file exist?
 	char[] filename = Auth.userDirPath ~ USER_CATEGORIES_FILE;
-	FilePath catFile = new FilePath(filename);
-	if(!catFile.exists) return;
-
-	// decrypt categories file and store categories.
+	if(!(new FilePath(filename)).exists) return;
+	
+	// Decrypt categories file and store categories.
 	char *textp;
 	char[] content;
 	char[] text = k_decrypt_to_string(filename, textp, Auth.cipherKey);
@@ -542,7 +540,8 @@ private class Note
     {
 	this.id = id;
 	this.name = sanitizeNoteName(name);
-	this.filename = getFileName(id, this.name);
+	this.filename = randStr ~ NOTE_FILE_EXTENSION;
+	Stdout("FILENAME", this.filename).newline;
 	this.content = content;
     }
 
@@ -574,6 +573,8 @@ private class Note
     {
 	foreach(note; notes)
 	    if(note.id == id) return note.name;
+
+	return "CANNOT FIND NOTE " ~ Integer.toString(id);
     }
 
     // Set note name.
@@ -626,19 +627,6 @@ private class Note
 	    noteName = name[0..MAX_CATEGORY_NAME_LENGTH];
 	noteName = Txt.trim(noteName);
 	return noteName;
-    }
-
-    /*
-      Generate and return file name based upon note name and its id
-    */
-    static private char[] getFileName(int id, char[] name)
-    {
-	char[] inStr = name ~ "-" ~ Integer.toString(id);
-	Sha512 digest = new Sha512;
-	digest.update(cast(ubyte[])inStr);
-	char[] filename = digest.hexDigest();
-	filename = filename[0..8] ~ NOTE_FILE_EXTENSION;
-	return filename;
     }
 
     /*
@@ -726,26 +714,23 @@ public class Storage
      */
     static public void saveText(in char[] text)
     {
-	if(!Auth.isUserLoggedIn) return;
-
 	Day.daySetText(getTodayFileName, text);
     }
 
     /*
       Encrypt today's text to file.
      */
-    static public void saveFinal(char[] text = null, int[][] catRanges = null)
+    static public void saveFinal()
     {
-	if(!Auth.isUserLoggedIn) return;
-
 	Category.saveCategories;
-	saveCategoryRanges(catRanges);
+	saveCategoryRanges;
 	Note.saveNotes;
 
 	char[] textFilePath = Auth.userDirPath ~ getTodayFileName ~ USER_DAY_FILE_EXTENSION;
 
-	// remove existing text file if no more new text
-	if((text is null) || (0 == text.length))
+	// Remove existing text file if no more new text.
+	char[] text = Day.dayGetText(getTodayFileName);
+	if(0 == text.length)
 	{
 	    FilePath textFile = new FilePath(textFilePath);
 	    if(textFile.exists)	textFile.remove;
@@ -755,7 +740,7 @@ public class Storage
 
 	saveText(text);
 
-	// store encrypted text in file
+	// Store encrypted text in file.
 	k_encrypt_from_string(Day.dayGetText(getTodayFileName),
 			      textFilePath,
 			      Auth.cipherKey);
@@ -786,20 +771,19 @@ public class Storage
     /*
       Encrypt category ranges into file.
      */
-    static private void saveCategoryRanges(int[][] catRanges)
+    static private void saveCategoryRanges()
     {
-	// no categories, remove from memory, remove file if exists
+	int[][] catRanges = Day.getCategoryRanges(getTodayFileName);
 	char[] catRangesFileName = Auth.userDirPath ~ getTodayFileName ~ USER_CATEGORY_RANGES_FILE_EXTENSION;
+
+	// No category ranges for today, remove file.
 	if(catRanges.length <= 0)
 	{
 	    FilePath catRangesFile = new FilePath(catRangesFileName);
 	    if(catRangesFile.exists) catRangesFile.remove;
 
-	    Day.setCategoryRanges(getTodayFileName, catRanges);
 	    return;
 	}
-
-	Day.setCategoryRanges(getTodayFileName, catRanges);
 
 	char[] rangesTxt;
 	int i = 0;
@@ -875,6 +859,22 @@ public class Storage
     static public int getCategoryID(char[] name)
     {
 	return Category.getCategoryID(name);
+    }
+
+    /*
+      Set category ranges for date.
+     */
+    static public void setCategoryRanges(DateTime date, int[][] ranges)
+    {
+	char[] dayName;
+	if(date is null)
+	    dayName = getTodayFileName;
+	else
+	    dayName = dateToFileName(date.getYear,
+				     date.getMonth + 1,
+				     date.getDay);
+
+	Day.setCategoryRanges(dayName, ranges);
     }
 
     /*
@@ -972,6 +972,17 @@ public class Storage
     static public void noteName(int id, char[] name)
     {
 	Note.noteName(id, name);
+    }
+
+
+    static public void noteContent(int id, char[] content)
+    {
+	Note.noteContent(id, content);
+    }
+
+    static public char[] noteContent(int id)
+    {
+	return Note.noteContent(id);
     }
 
     static public char[][int] getNotes()

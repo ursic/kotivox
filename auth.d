@@ -133,35 +133,35 @@ public class Auth
     {
 	char[] username = userData[0];
 	
-	// does given user exist?
+	// Does given user exist?
 	if(!Validator.usernameExists(username))
 	{
 	    errorMsg = "I cannot find user " ~ username ~ ".\nPlease enter registered username.";
 	    return false;
 	}
 
-	// does user's ident exist?
+	// Does user's ident exist?
 	char[] ident = usernameToIdent(username);
 	userDirPath = APP_DIR ~ USER_DIR ~ "/" ~ ident ~ "/";
 	userConfig = userDirPath ~ CONFIG_FILE;
 
 	readConfig(userConfig);
 
-	// set default category background color if nonexistent
+	// Set default category background color if nonexistent.
 	if(!getConfig(USER_CATEGORY_BACKGROUND_COLOR_SETTING_NAME))
 	  setConfig(USER_CATEGORY_BACKGROUND_COLOR_SETTING_NAME,
 		    USER_CATEGORY_BACKGROUND_COLOR);
 	
-	// password idents have to match for log in
+	// Password idents have to match for log in.
 	char[] password = userData[1];
 	char[] passwordIdent1 = getConfig("ident");
 	char[] passwordIdent2 = passwordToIdent(password);
 
-	// login the user if password digests match
+	// Login the user if password digests match.
 	if(passwordIdent1 == passwordIdent2)
 	{
 	    userLoggedIn = true;
-	    // decrypt user data
+	    // Decrypt user data.
 	    Storage.loadUserData;
 	}
 	else

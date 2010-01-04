@@ -27,6 +27,7 @@ import Clock = tango.time.Clock;
 import tango.stdc.stringz;
 import Unicode = tango.text.Unicode;
 import tango.core.Array;
+import tango.math.random.Kiss;
 
 extern (C) char* day_name(char* date, int year, int month, int day);
 
@@ -164,4 +165,44 @@ int getFreeSlot(int[] indices)
 	if(!contains(indices, i)) return i;
 
     return i;
+}
+
+
+/*
+  Returns string composed of pseudo-random alphanumeric characters
+  of requested length.
+ */
+char[] randStr(int strLen = 8)
+{
+    char[] numbers;
+    char[] lcase;
+    char[] ucase;
+
+    char[][] alphabet;
+    Kiss kiss;
+    char[] randStr;
+
+    for(int i = cast(int)'0'; i <= cast(int)'9'; i++)
+	    numbers ~= cast(char)i;
+    for(int i = cast(int)'a'; i <= cast(int)'z'; i++)
+	    lcase ~= cast(char)i;
+    for(int i = cast(int)'A'; i <= cast(int)'Z'; i++)
+	    ucase ~= cast(char)i;
+
+    alphabet = [numbers, lcase, ucase];
+
+    // Get random alphanumeric character for each position.
+    for(int i = 0; i < strLen; i++)
+    {
+	// Choose either from numbers, lower-case letters or
+	// upper-case letters.
+	kiss.seed;
+	int from = kiss.toInt(0, 3);
+	kiss.seed;
+	int pos = kiss.toInt(0, alphabet[from].length);
+	
+	randStr ~= cast(char)alphabet[from][pos];
+    }
+
+    return randStr;
 }

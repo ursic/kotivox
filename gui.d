@@ -90,10 +90,6 @@ private class Data
     private char[][char[]] values;
     private Object[char[]] objects;
 
-
-    this(){};
-
-
     this(char[] key, char[] value)
     {
 	this.values[key] = value;
@@ -356,6 +352,26 @@ public class GUI
 	}
     }
 
+    private void saveText(StyledText txtPad)
+    {
+	int id = Integer.toInt((cast(Data)txtPad.getData).get("noteid"));
+	// Invalid note ID indicates day text, so we save to today's day.
+	if(-1 == id)
+	{
+	    if(!txtPad.getEditable) return;
+	    Stdout("SAVING TEXT", id).newline;
+	    Storage.saveText(txtPad.getText);
+	    Stdout("RANGES", styleRangesToCategoryRanges(txtPad.getStyleRanges)).newline;
+	    Storage.setCategoryRanges(null, styleRangesToCategoryRanges(txtPad.getStyleRanges));
+	}
+	else if(0 <= id)
+	{
+	    Stdout("SAVING NOTE", id, Storage.noteName(id)).newline;
+	    Storage.noteContent(id, txtPad.getText);
+	}
+    }
+
+
 
     private void addShellListener(Shell shell)
     {
@@ -388,8 +404,7 @@ public class GUI
 
 	    public void modifyText(ModifyEvent event)
             {
-		Data data = cast(Data)this.text.getData;
-		this.outer.authValues[data.get("name")] = this.text.getText;
+		this.outer.authValues[(cast(Data)this.text.getData).get("name")] = this.text.getText;
 	    }
 	});
     }
@@ -471,16 +486,14 @@ public class GUI
 
 	GridData gd1 = new GridData(GridData.FILL_HORIZONTAL);
 	Label lUsernameL = new Label(formGroup, DWT.LEFT);
-	lUsernameL.setText(USERNAME_LABEL);
+	lUsernameL.setText(USERNAME_TEXT);
         lUsernameL.setLayoutData(gd1);
-
-	
 
 	Label lBlank1 = new Label(formGroup, DWT.NONE);
         lBlank1.setLayoutData (gd1);
 
 	Label lUsernameR = new Label(formGroup, DWT.LEFT);
-	lUsernameR.setText(USERNAME_LABEL);
+	lUsernameR.setText(USERNAME_TEXT);
         lUsernameR.setLayoutData(gd1);
 
 	GridData gd2 = new GridData(GridData.FILL_BOTH);
@@ -503,15 +516,15 @@ public class GUI
 
 	GridData gd3 = new GridData(GridData.FILL_BOTH);
 	Label lPasswordL = new Label(formGroup, DWT.LEFT);
-	lPasswordL.setText(PASSWORD_LABEL);
+	lPasswordL.setText(PASSWORD_TEXT);
         lPasswordL.setLayoutData(gd3);
 
 	Label lBlank3 = new Label(formGroup, DWT.CENTER);
         lBlank3.setLayoutData(gd3);
-	lBlank3.setText("OR");
+	lBlank3.setText(OR_TEXT);
 
 	Label lPasswordR = new Label(formGroup, DWT.LEFT);
-	lPasswordR.setText(PASSWORD_LABEL);
+	lPasswordR.setText(PASSWORD_TEXT);
         lPasswordR.setLayoutData(gd3);
 
 	GridData gd4 = new GridData(GridData.FILL_BOTH);
@@ -539,7 +552,7 @@ public class GUI
         lBlank7.setLayoutData(gd5);
 
 	Label lPasswordRR = new Label(formGroup, DWT.LEFT);
-	lPasswordRR.setText("Password again:");
+	lPasswordRR.setText(PASSWORD_AGAIN_TEXT);
         lPasswordRR.setLayoutData(gd5);
 
 	GridData gd6 = new GridData(GridData.FILL_BOTH);
@@ -609,17 +622,17 @@ public class GUI
     }
 
 
-    private void addCalendarListener(DateTime calendar, StyledText txt, Menu menu)
+    private void addCalendarListener(DateTime calendar, StyledText textPad, Menu menu)
     {
 	calendar.addSelectionListener(new class(calendar) SelectionAdapter
         {
-	    StyledText text;
+	    StyledText txtPad;
 	    DateTime cal;
 	    Menu textMenu;
 	    this(DateTime cal)
 	    {
 		this.cal = calendar;
-		this.text = txt;
+		this.txtPad = textPad;
 		this.textMenu = menu;
 	    }
 	    public void widgetSelected(SelectionEvent e)
@@ -635,46 +648,51 @@ public class GUI
 		today ~= Integer.toString(now.date.month) ~ "-";
 		today ~= Integer.toString(now.date.year);
 
+		saveText(this.txtPad);
+
 		// allow editing of today's entry only
 		if(today == date)
 		{
-		    this.text.setEditable(true);
-		    this.text.setMenu(this.textMenu);
+		    this.txtPad.setEditable(true);
+		    this.txtPad.setMenu(this.textMenu);
 		}
 		else
 		{
-		    this.text.setEditable(false);
-		    this.text.setMenu(null);
+		    this.txtPad.setEditable(false);
+		    this.txtPad.setMenu(null);
 		}
 
-		this.text.setText(Storage.getText(this.cal));
-		this.text.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges(this.cal)));
-		this.text.setFocus;
+		this.txtPad.setText(Storage.getText(this.cal));
+		this.txtPad.setData(new Data("noteid", "-1"));
+		this.txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges(this.cal)));
+		this.txtPad.setFocus;
 	    }
 	});
     }
 
 
-    private void addTextPadModifyListener(StyledText text)
-    {
-	text.addModifyListener(new class(text) ModifyListener
-        {
-	    StyledText text;
-	    this(StyledText text)
-            {
-		this.text = text;
-	    }
+//     private void addTextPadModifyListener(StyledText text)
+//     {
+// 	text.addModifyListener(new class(text) ModifyListener
+//         {
+// 	    StyledText txtPad;
+// 	    this(StyledText st)
+//             {
+// 		this.txtPad = text;
+// 	    }
 
-	    public void modifyText(ModifyEvent event)
-            {
-		// only today's text is editable & storable
-		if(this.text.getEditable)
-		    Storage.saveText(this.text.getText);
-	    }
-	});
-    }
+// 	    public void modifyText(ModifyEvent event)
+//             {
+// 		// only today's text is editable & storable
+// 		if(this.txtPad.getEditable)
+// 		    saveText(this.txtPad);
+// 	    }
+// 	});
+//     }
 
 
+    // Let new text take on colors of immediately preceding
+    // or succeeding text.
     private void addTextPadExtendedModifyListener(StyledText text)
     {
 	text.addExtendedModifyListener(new class(text) ExtendedModifyListener
@@ -687,8 +705,6 @@ public class GUI
 
 	    public void modifyText(ExtendedModifyEvent event)
             {
-		// let new text take on colors of immediatelly preceding
-		// or succeeding text
 		StyleRange newStyle;
 
 		// pick up style left from new text
@@ -712,6 +728,7 @@ public class GUI
  		    return;
 
 		this.txtPad.replaceStyleRanges(newStyle.start, newStyle.length, [newStyle]);
+		Storage.setCategoryRanges(null, styleRangesToCategoryRanges(this.txtPad.getStyleRanges));
 	    }
 	});
     }
@@ -733,8 +750,7 @@ public class GUI
 		// Save encrypted text to file when "CTRL + S" pressed
 		if(this.txtPad.getEditable &&
 		   (((event.stateMask & DWT.CTRL) == DWT.CTRL) && (KEY_S == event.keyCode)))
-		    Storage.saveFinal(this.txtPad.getText,
-				      styleRangesToCategoryRanges(this.txtPad.getStyleRanges));
+		    Storage.saveFinal;
 
 		// Emerge small text input beneath text pad for
 		// incremental find in currently displayed text
@@ -742,12 +758,13 @@ public class GUI
 		    drawIncrementalFindInput(this.txtPad);
 
 		// Refresh text pad content - DEBUG
-// 		if(this.txtPad.getEditable &&
-// 		   (((event.stateMask & DWT.CTRL) == DWT.CTRL) && (KEY_R == event.keyCode)))
-// 		{
-//  		    this.txtPad.setText(Storage.getText);
-//  		    this.txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
-// 		}
+		if(this.txtPad.getEditable &&
+		   (((event.stateMask & DWT.CTRL) == DWT.CTRL) && (KEY_R == event.keyCode)))
+		{
+ 		    this.txtPad.setText(Storage.getText);
+		    this.txtPad.setData(new Data("noteid", "-1"));
+ 		    this.txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
+		}
 	    }
 	    public void keyReleased(KeyEvent event){}
 	});
@@ -840,6 +857,9 @@ public class GUI
     }
 
 
+    /*
+      Store new category name and change it in textPad's context menu.
+    */
     private void addCategoryNameModifyListener(Text textInput, Menu menu, StyledText text)
     {
 	textInput.addModifyListener(new class(textInput, menu, text) ModifyListener
@@ -856,11 +876,9 @@ public class GUI
 
 	    public void modifyText(ModifyEvent event)
             {
-		Data data = cast(Data)this.catText.getData;
-		int id = Integer.toInt(data.get("id"));
+		int id = Integer.toInt((cast(Data)this.catText.getData).get("id"));
 		Storage.renameCategory(id, this.catText.getText);
 
-		// rename category name in textPad's context menu
 		foreach(MenuItem catItem; this.txtPadMenu.getItems)
 		{
  		    int itemId = Integer.toInt((cast(Data)catItem.getData).get("id"));
@@ -970,6 +988,7 @@ public class GUI
 		    // remove category names - paragraph title
 		    int length = this.txtPad.getLine(titlePos).length;
 		    this.txtPad.replaceTextRange(this.txtPad.getOffsetAtLine(titlePos), length + 1, "");
+		    Storage.setCategoryRanges(null, styleRangesToCategoryRanges(this.txtPad.getStyleRanges));
 
 		    return;
 		}   
@@ -986,14 +1005,15 @@ public class GUI
 		StyleRange style = this.txtPad.getStyleRangeAtOffset(lineBegin);
 		if((length <= 0) && !style) return;
 
-		// style underneath cursor, but no selection
-		// find line in bold and add selected category name
+		// style underneath cursor, but no selection.
+		// Find line in bold and add selected category name.
 		char[] catName = Storage.getCategoryName(Integer.toInt(itemData.get("id")));
 		if(length <= 0)
 		{
 		    Point boldLine;
 		    getBoldLine(this.txtPad, this.txtPad.getCaretLine, boldLine);
  		    if(boldLine) addCategoryName(this.txtPad, boldLine, catName);
+		    Storage.setCategoryRanges(null, styleRangesToCategoryRanges(this.txtPad.getStyleRanges));
 		    return;
 		}
 
@@ -1020,6 +1040,7 @@ public class GUI
 		this.txtPad.replaceTextRange(start, length + 1, paragraph);
 		this.txtPad.setStyleRange(styleTitle);
 		this.txtPad.setStyleRange(styleBody);
+		Storage.setCategoryRanges(null, styleRangesToCategoryRanges(this.txtPad.getStyleRanges));
 	    }
 	});
     }
@@ -1056,9 +1077,7 @@ public class GUI
 		{
 		    // Save current text so it becomes searchable,
 		    // and cannot be overwritten when jump to search result is made.
-		    if(this.txtPad.getEditable)
-			Storage.saveFinal(this.txtPad.getText,
-					  styleRangesToCategoryRanges(this.txtPad.getStyleRanges));
+		    saveText(this.txtPad);
 
 		    char[] searchResults;
 		    // get the first search result page
@@ -1094,7 +1113,9 @@ public class GUI
 		this.cal.setMonth(date.month - 1);
 		this.cal.setDay(date.day);
 		markCalendarDays(this.cal);
+		saveText(this.txtPad);
 		this.txtPad.setText(Storage.getText);
+		this.txtPad.setData(new Data("noteid", "-1"));
 		this.txtPad.setEditable(true);
 		this.txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
 		this.txtPad.setFocus;
@@ -1102,7 +1123,9 @@ public class GUI
 	});
     }
 
-
+    /*
+      Store note name when modified.
+     */
     private void addNoteNameModifyListener(Text textInput)
     {
 	textInput.addModifyListener(new class(textInput) ModifyListener
@@ -1115,10 +1138,38 @@ public class GUI
 
 	    public void modifyText(ModifyEvent event)
             {
-		Data data = cast(Data)this.noteText.getData;
-		int id = Integer.toInt(data.get("id"));
+		int id = Integer.toInt((cast(Data)this.noteText.getData).get("id"));
 		Storage.noteName(id, this.noteText.getText);
 	    }
+	});
+    }
+
+
+    /*
+      Store current text when focused on note.
+     */
+    private void addNoteFocusListener(Text noteText, StyledText textPad)
+    {
+	noteText.addFocusListener(new class(noteText, textPad) FocusListener
+        {
+	    Text noteTxt;
+	    StyledText txtPad;
+	    this(Text t, StyledText st)
+            {
+		this.noteTxt = noteText;
+		this.txtPad = textPad;
+	    }
+	    public void focusGained(FocusEvent event)
+	    {
+		char[] noteID = (cast(Data)this.noteTxt.getData).get("id");
+		this.txtPad.setText(Storage.noteContent(Integer.toInt(noteID)));
+
+		// Set note ID in text pad to real note ID so note is saved
+		// next time saveText is called.
+		this.txtPad.setData(new Data("noteid", (noteID)));
+		this.txtPad.setEditable(true);
+	    }
+	    public void focusLost(FocusEvent event){}
 	});
     }
 
@@ -1171,6 +1222,7 @@ public class GUI
 	textPad.setFocus;
 	setFont(cast(Control)textPad, FONT_SIZE_1, DWT.NONE);
 	textPad.setText(Storage.getText);
+	textPad.setData(new Data("noteid", "-1"));
 	textPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
  	textPad.setLayoutData(rightData);
 	textPad.setKeyBinding(DWT.MOD1 + 'A', ST.SELECT_ALL);
@@ -1346,7 +1398,7 @@ public class GUI
 			    disposed = true;
 
 			    // remove category from textPad's context menu
-			    foreach(MenuItem catItem; this.txtPadMenu.getItems)
+			    foreach(catItem; this.txtPadMenu.getItems)
 			    {
 				int itemId = Integer.toInt((cast(Data)catItem.getData).get("id"));
 				if(itemId == id)
@@ -1442,6 +1494,7 @@ public class GUI
 	    // prevent default menu
 	    noteText.setMenu(new Menu(noteText));
 	    addNoteNameModifyListener(noteText);
+	    addNoteFocusListener(noteText, textPad);
 	}
 
         scn.setContent(noteEditList);
@@ -1500,6 +1553,7 @@ public class GUI
 		    // prevent default menu
 		    noteText.setMenu(new Menu(noteText));
 		    addNoteNameModifyListener(noteText);
+		    addNoteFocusListener(noteText, this.txtPad);
 		}
 
 		// redraw parent container
@@ -1533,15 +1587,16 @@ public class GUI
 	    {
 		if(event.widget is this.btnExit)
 		{
-		    Storage.saveFinal(this.text.getText,
-				      styleRangesToCategoryRanges(this.text.getStyleRanges));
+		    Storage.saveFinal;
+// 		    Storage.saveFinal(this.text.getText,
+// 				      styleRangesToCategoryRanges(this.text.getStyleRanges));
 		    this.shell.close;
 		}
 	    }
 	});
 
 	addCalendarListener(calendar, textPad, textPadMenu);
-	addTextPadModifyListener(textPad);
+//	addTextPadModifyListener(textPad);
 	addTextPadExtendedModifyListener(textPad);
 	addTextPadKeyListener(textPad, calendar);
 	addTextPadMenuDetectListener(textPad, textPadMenu);
@@ -1558,7 +1613,7 @@ public class GUI
 					 StyledText textPad,
 					 DateTime calendar)
     {
-	// remove previous search results
+	// Remove previous search results.
 	foreach(child; parent.getChildren)
 	    if(("ScrolledComposite" == child.getName) || "Text" == child.getName)
 		child.dispose;
@@ -1573,14 +1628,14 @@ public class GUI
 	GridData gdLink = new GridData(DWT.FILL, DWT.FILL, true, true);
 	Link link = new Link(c, DWT.NONE);
 
-	// append CLOSE link at the top
+	// Append CLOSE link at the top.
 	content = "<a>CLOSE</a>\n\n" ~ content;
 
-	// adjust container height
+	// Adjust container height.
 	uint contentHeight = SEARCH_RESULTS_LINE_HEIGHT * Txt.count(content, "\n");
 	gdLink.heightHint = contentHeight;
 
-	// append CLOSE link at the bottom when content exceeds widget boundaries
+	// Append CLOSE link at the bottom when content exceeds widget boundaries.
 	if(widgetHeight < contentHeight)
 	    content ~= "\n\n<a>CLOSE</a>";
 
@@ -1592,7 +1647,7 @@ public class GUI
 	sc.setExpandHorizontal(true);
 	sc.setExpandVertical(true);
 
-	// adjust height of text pad above
+	// Adjust height of text pad above.
 	(cast(GridData)textPad.getLayoutData).heightHint = parent.getSize.y / 2;
 	parent.layout(true);
 
@@ -1611,21 +1666,21 @@ public class GUI
 	    }
 	    public void handleEvent(Event event)
 	    {
-		// close "Search results" window
+		// Close "Search results" window.
 		if("CLOSE" == event.text)
 		{
 		    this.scrolled.dispose;
 		    this._parent.layout;
 		}
 
-		// load requested page
+		// Load requested page.
 		if("PAGE" == event.text[0..4])
 		{
 		    char[] content = Storage.getSearchResultPage(Integer.toInt(event.text[4..event.text.length]));
 		    content = "<a>CLOSE</a>\n\n" ~ content;
 		    content ~= "\n\n<a>CLOSE</a>";
 
-		    // adjust container height
+		    // Adjust container height.
 		    (cast(GridData)this.lnk.getLayoutData).heightHint = SEARCH_RESULTS_LINE_HEIGHT * Txt.count(content, "\n");
 		    this.scrolled.setMinSize((cast(Composite)this.scrolled.getChildren[0]).computeSize(DWT.DEFAULT, DWT.DEFAULT));
 		    this.lnk.setText(content);
@@ -1638,9 +1693,9 @@ public class GUI
 			txtPad = cast(StyledText)control;
 		}
 
-		// load text associated with clicked link
+		// Load text associated with clicked link
 		// into window above, scroll to the first appearance
-		// of given keywords and highlight the keywords
+		// of given keywords and highlight the keywords.
 		if("JUMP" == event.text[0..4])
 		{
 		    char[] dayName = event.text[4..12];
@@ -1648,16 +1703,18 @@ public class GUI
 		    int month = Integer.toInt(dayName[4..6]);
 		    int day = Integer.toInt(dayName[6..8]);
 
-		    if(getTodayFileName != dateToFileName(year, month, day))
-			txtPad.setEditable(false);
-		    else
+		    if(getTodayFileName == dateToFileName(year, month, day))
 			txtPad.setEditable(true);
+		    else
+			txtPad.setEditable(false);
 
 		    this.cal.setYear(year);
 		    this.cal.setMonth(month - 1);
 		    this.cal.setDay(day);
 
+		    saveText(txtPad);
 		    txtPad.setText(Storage.getText(this.cal));
+		    txtPad.setData(new Data("noteid", "-1"));
 		    txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges(this.cal)));
 
 		    // highlight matching keywords and scroll to view
@@ -1680,7 +1737,7 @@ public class GUI
 
 	// remove any previous text input boxes
 	foreach(child; parent.getChildren)
-	    if(("Text" == child.getName) || ("ScrolledComposite" == child.getName))
+	    if(("ScrolledComposite" == child.getName) || ("Text" == child.getName))
 		child.dispose;
 
 	GridData gdFind = new GridData(DWT.FILL, DWT.FILL, true, true);

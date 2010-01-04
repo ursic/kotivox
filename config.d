@@ -21,7 +21,7 @@
 
 /*****************************************************************************
  *
- * Default Kotivox settings
+ * Default settings
  *
  *****************************************************************************/
 
@@ -53,9 +53,10 @@ public const char[] USER_CATEGORY_BACKGROUND_COLOR_SETTING_NAME = "categoryBackg
 public const char[] CATEGORY_LIST_BACKGROUND_COLOR = "239 239 239";
 public const char[] USER_CATEGORY_BACKGROUND_COLOR = "231 239 255";
 
-public const char[] USERNAME_LABEL = "Username:";
-public const char[] PASSWORD_LABEL = "Password:";
-public const char[] PASSWORD_AGAIN_LABEL = "Password again:";
+public const char[] USERNAME_TEXT = "Username:";
+public const char[] PASSWORD_TEXT = "Password:";
+public const char[] PASSWORD_AGAIN_TEXT = "Password again:";
+public const char[] OR_TEXT = "OR";
 public const char[] LOGIN_TEXT = "Login";
 public const char[] REGISTER_TEXT = "Register";
 public const char[] CATEGORIES_TEXT = "Categories";
