@@ -352,6 +352,11 @@ public class GUI
 	}
     }
 
+
+    /*
+      Store text in text pad according to note ID.
+      -1 indicates text, values 0 or larger indicate note.
+     */
     private void saveText(StyledText txtPad)
     {
 	int id = Integer.toInt((cast(Data)txtPad.getData).get("noteid"));
@@ -359,18 +364,22 @@ public class GUI
 	if(-1 == id)
 	{
 	    if(!txtPad.getEditable) return;
-	    Stdout("SAVING TEXT", id).newline;
 	    Storage.saveText(txtPad.getText);
-	    Stdout("RANGES", styleRangesToCategoryRanges(txtPad.getStyleRanges)).newline;
 	    Storage.setCategoryRanges(null, styleRangesToCategoryRanges(txtPad.getStyleRanges));
 	}
 	else if(0 <= id)
-	{
-	    Stdout("SAVING NOTE", id, Storage.noteName(id)).newline;
 	    Storage.noteContent(id, txtPad.getText);
-	}
     }
 
+    
+    private void hideSearchChildren(Composite parent)
+    {
+	foreach(child; parent.getChildren)
+	    if(("ScrolledComposite" == child.getName) || "Text" == child.getName)
+		child.dispose;
+
+	parent.layout;
+    }
 
 
     private void addShellListener(Shell shell)
@@ -662,6 +671,7 @@ public class GUI
 		    this.txtPad.setMenu(null);
 		}
 
+		hideSearchChildren(this.txtPad.getParent);
 		this.txtPad.setText(Storage.getText(this.cal));
 		this.txtPad.setData(new Data("noteid", "-1"));
 		this.txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges(this.cal)));
@@ -669,26 +679,6 @@ public class GUI
 	    }
 	});
     }
-
-
-//     private void addTextPadModifyListener(StyledText text)
-//     {
-// 	text.addModifyListener(new class(text) ModifyListener
-//         {
-// 	    StyledText txtPad;
-// 	    this(StyledText st)
-//             {
-// 		this.txtPad = text;
-// 	    }
-
-// 	    public void modifyText(ModifyEvent event)
-//             {
-// 		// only today's text is editable & storable
-// 		if(this.txtPad.getEditable)
-// 		    saveText(this.txtPad);
-// 	    }
-// 	});
-//     }
 
 
     // Let new text take on colors of immediately preceding
@@ -750,7 +740,10 @@ public class GUI
 		// Save encrypted text to file when "CTRL + S" pressed
 		if(this.txtPad.getEditable &&
 		   (((event.stateMask & DWT.CTRL) == DWT.CTRL) && (KEY_S == event.keyCode)))
+		{
+		    saveText(this.txtPad);
 		    Storage.saveFinal;
+		}
 
 		// Emerge small text input beneath text pad for
 		// incremental find in currently displayed text
@@ -789,7 +782,14 @@ public class GUI
 
 	    public void menuDetected(MenuDetectEvent event)
 	    {
-		// only today's text is editable
+		// No tagging in notes, because there's no global search.
+		if(0 <= Integer.toInt((cast(Data)txtPad.getData).get("noteid")))
+		{
+		    this.txtPad.setMenu(null);
+		    return;
+		}
+
+		// Only today's text is editable.
 		if(!this.txtPad.getEditable)
 		{
 		    this.txtPad.setMenu(null);
@@ -1085,7 +1085,7 @@ public class GUI
 							    getSelectedCategories(this.catList))).length)
 			searchResults = Storage.getSearchResultPage;
 		    
-		    drawSearchResultsWindow(this._rightComposite, searchResults, this.txtPad, this.cal);
+		    drawSearchResultsWindow(searchResults, this.txtPad, this.cal);
 		}
 	    }
 	    public void keyReleased(KeyEvent event){}
@@ -1113,6 +1113,7 @@ public class GUI
 		this.cal.setMonth(date.month - 1);
 		this.cal.setDay(date.day);
 		markCalendarDays(this.cal);
+		hideSearchChildren(this.txtPad.getParent);
 		saveText(this.txtPad);
 		this.txtPad.setText(Storage.getText);
 		this.txtPad.setData(new Data("noteid", "-1"));
@@ -1161,6 +1162,8 @@ public class GUI
 	    }
 	    public void focusGained(FocusEvent event)
 	    {
+		hideSearchChildren(this.txtPad.getParent);
+		saveText(this.txtPad);
 		char[] noteID = (cast(Data)this.noteTxt.getData).get("id");
 		this.txtPad.setText(Storage.noteContent(Integer.toInt(noteID)));
 
@@ -1445,7 +1448,7 @@ public class GUI
 		    addMenuItemListener(catItem, this.txtPadMenu, this.txtPad, calendar);
 		}
 
-		// redraw parent container
+		// Redraw parent container.
 		this._sc.setContent(this._catEditList);
 		this._sc.setMinSize(this._catEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
 	    }
@@ -1539,7 +1542,6 @@ public class GUI
 		{
 		    int noteListWidth = MAIN_WINDOW_LEFT_COLUMN_WIDTH - 60;
 
-		    // id of new note
 		    char[] id = Integer.toString(Storage.addNote);
 		    char[] name = NOTES_TEXT ~ " " ~ id;
 
@@ -1550,13 +1552,14 @@ public class GUI
 		    noteText.setText(name);
 		    noteText.setLayoutData(gdText);
 		    noteText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
-		    // prevent default menu
+		    // Prevent default menu.
 		    noteText.setMenu(new Menu(noteText));
+		    Storage.noteContent(Integer.toInt(id), name);
 		    addNoteNameModifyListener(noteText);
 		    addNoteFocusListener(noteText, this.txtPad);
 		}
 
-		// redraw parent container
+		// Redraw parent container.
 		this._scn.setContent(this._noteEditList);
 		this._scn.setMinSize(this._noteEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
 	    }
@@ -1570,33 +1573,29 @@ public class GUI
 	bExit.setText("Save && Close");
         bExit.setLayoutData(gdButtonExit);
 
-	bExit.addListener(DWT.Selection, new class(textPad, shell, catEditList, bExit) Listener
+	bExit.addListener(DWT.Selection, new class(textPad, shell, bExit) Listener
 	{
 	    StyledText text;
 	    Shell shell;
 	    Button btnExit;
-	    Composite catList;
-	    this(StyledText text, Shell shell, Composite composite, Button button)
+	    this(StyledText text, Shell shell, Button button)
 	    {
 		this.text = textPad;
 		this.shell = shell;
-		this.catList = catEditList;
 		this.btnExit = bExit;
 	    }
 	    public void handleEvent(Event event)
 	    {
 		if(event.widget is this.btnExit)
 		{
+		    saveText(this.text);
 		    Storage.saveFinal;
-// 		    Storage.saveFinal(this.text.getText,
-// 				      styleRangesToCategoryRanges(this.text.getStyleRanges));
 		    this.shell.close;
 		}
 	    }
 	});
 
 	addCalendarListener(calendar, textPad, textPadMenu);
-//	addTextPadModifyListener(textPad);
 	addTextPadExtendedModifyListener(textPad);
 	addTextPadKeyListener(textPad, calendar);
 	addTextPadMenuDetectListener(textPad, textPadMenu);
@@ -1608,15 +1607,14 @@ public class GUI
     }
 
 
-    private void drawSearchResultsWindow(Composite parent,
-					 char[] content,
+    private void drawSearchResultsWindow(char[] content,
 					 StyledText textPad,
 					 DateTime calendar)
     {
+	Composite parent = textPad.getParent;
+
 	// Remove previous search results.
-	foreach(child; parent.getChildren)
-	    if(("ScrolledComposite" == child.getName) || "Text" == child.getName)
-		child.dispose;
+	hideSearchChildren(parent);
 
 	GridData gdSearch = new GridData(DWT.FILL, DWT.FILL, true, true);
 	uint widgetHeight = parent.getSize.y / 2;
@@ -1703,6 +1701,8 @@ public class GUI
 		    int month = Integer.toInt(dayName[4..6]);
 		    int day = Integer.toInt(dayName[6..8]);
 
+		    saveText(txtPad);
+
 		    if(getTodayFileName == dateToFileName(year, month, day))
 			txtPad.setEditable(true);
 		    else
@@ -1712,7 +1712,6 @@ public class GUI
 		    this.cal.setMonth(month - 1);
 		    this.cal.setDay(day);
 
-		    saveText(txtPad);
 		    txtPad.setText(Storage.getText(this.cal));
 		    txtPad.setData(new Data("noteid", "-1"));
 		    txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges(this.cal)));
@@ -1735,10 +1734,8 @@ public class GUI
     {
 	Composite parent = textPad.getParent;
 
-	// remove any previous text input boxes
-	foreach(child; parent.getChildren)
-	    if(("ScrolledComposite" == child.getName) || ("Text" == child.getName))
-		child.dispose;
+	// Remove previous search results.
+	hideSearchChildren(parent);
 
 	GridData gdFind = new GridData(DWT.FILL, DWT.FILL, true, true);
 	Text find = new Text(parent, DWT.BORDER);

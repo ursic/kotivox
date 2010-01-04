@@ -29,13 +29,15 @@ import Unicode = tango.text.Unicode;
 import tango.core.Array;
 import tango.math.random.Kiss;
 
+import dwt.widgets.DateTime;
+
 extern (C) char* day_name(char* date, int year, int month, int day);
 
 
 /*
   Return formatted date string
  */
-char[] day_name(int year, int month, int day)
+char[] dayName(int year, int month, int day)
 {
     char* date;
     return fromStringz(day_name(date, year, month, day));
@@ -142,9 +144,9 @@ char[][] shiftRight(char[][] words)
 char[] toUtf8(char[] string)
 {
     dchar[] result;
-    result = Unicode.toString32(string, result);
-
     char[] str;
+
+    result = Unicode.toString32(string, result);
     foreach(dchar ch; result)
     {
 	char[] dst;

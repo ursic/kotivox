@@ -477,7 +477,7 @@ private class SearchResultPage
 		    int month = Integer.toInt(day.name[4..6]);
 		    int mday = Integer.toInt(day.name[6..8]);
 
-		    char[] date = day_name(year, month, mday);
+		    char[] date = dayName(year, month, mday);
 		    result ~= "<a href=\"JUMP" ~ day.name ~ Integer.toString(location) ~ "-" ~ this.keywords  ~ "\">" ~ date ~ "</a>\n";
 		    result ~= head ~ Unicode.toUpper(core) ~ tail;
 		    result ~= "\n\n";
@@ -541,7 +541,6 @@ private class Note
 	this.id = id;
 	this.name = sanitizeNoteName(name);
 	this.filename = randStr ~ NOTE_FILE_EXTENSION;
-	Stdout("FILENAME", this.filename).newline;
 	this.content = content;
     }
 
@@ -601,6 +600,8 @@ private class Note
 		break;
 	    }
 	}
+// 	foreach(note; notes)
+// 	  Stdout(note.content).newline;
     }
 
     static private char[] noteContent(int id)
@@ -690,7 +691,7 @@ private class Note
 	    // The rest of the lines is content.
 	    char[] content = "";
 	    for(int i = 1; i < lines.length; i++)
-		content ~= lines[i];
+		content ~= lines[i] ~ "\n";
 
 	    notes ~= new Note(Integer.toInt(settings[settings.length - 1]),
 			      name,
@@ -946,8 +947,11 @@ public class Storage
 	int[] days;
 	foreach(day; Day.days)
 	{
+	    char[] dateStr = dateToFileName(date.getYear,
+					    date.getMonth + 1,
+					    date.getDay);
 	    // given day is in Day array and has content
-	    if((Integer.toInt(day.name[4..6]) == (date.getMonth + 1)) && (0 < day.text.length))
+	    if((day.name[0..6] == dateStr[0..6]) && (0 < day.text.length))
 		days ~= Integer.toInt(day.name[6..8]);
 	}
 
