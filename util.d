@@ -34,7 +34,7 @@ import dwt.widgets.DateTime;
 
 
 /*
-  Return formatted date string
+  Return formatted date string.
  */
 char[] dayName(int year, int month, int day)
 {
@@ -54,6 +54,25 @@ char[] dayName(int year, int month, int day)
       strftime(daybuf, 36, format, &time_str);
 
     return fromStringz(daybuf);
+}
+
+
+/*
+  Return time stamp.
+ */
+char[] timestamp()
+{
+    char[6] timeStr;
+    char* timestamp = toStringz(timeStr);
+    char* format = "%H:%M";
+    static time_t rawtime;
+    static tm* timeinfo;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    if(mktime(timeinfo) != -1)
+      strftime(timestamp, 6, format, timeinfo);
+
+    return fromStringz(timestamp);
 }
 
 
