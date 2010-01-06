@@ -83,7 +83,7 @@ import storage;
 
 
 /*
-  Class for per-widget data
+  Per-widget data.
  */
 private class Data
 {
@@ -104,6 +104,19 @@ private class Data
     }
 }
 
+
+/*
+  Menu option.
+ */
+private struct MenuOption
+{
+    int style = DWT.NONE;
+    char[] id;
+    char[] text;
+    int index = -1;
+}
+
+
 public class GUI
 {
     private Shell shell;
@@ -116,8 +129,10 @@ public class GUI
 
     static private char[][char[]] authValues;
 
-    private const char[] SEPARATOR_ID = "-1";
-    private const char[] CLEAR_ID = "-2";
+    private const char[] SEPARATOR1_ID = "-1";
+    private const char[] SEPARATOR2_ID = "-2";
+    private const char[] TIMESTAMP_ID = "-3";
+    private const char[] CLEAR_ID = "-4";
 
 
     public this()
@@ -379,6 +394,41 @@ public class GUI
 		child.dispose;
 
 	parent.layout;
+    }
+
+
+    private void addMenuOption(Menu menu, MenuOption option, StyledText txtPad)
+    {
+	removeMenuOption(menu, option);
+	MenuItem item;
+	if(-1 == option.index)
+	    item = new MenuItem(menu, option.style);
+	else
+	    item = new MenuItem(menu, option.style, option.index);
+	item.setData(new Data("id", option.id));
+	if(0 < option.text.length) item.setText(option.text);
+	addMenuItemListener(item, menu, txtPad);
+    }
+
+
+    private void removeMenuOption(Menu menu, MenuOption option)
+    {
+	foreach(item; menu.getItems)
+	{
+	    Data itemData = cast(Data)item.getData;
+	    if(option.id == itemData.get("id"))
+		item.dispose;
+	}
+    }
+
+
+    private void addTimestampMenu(StyledText txtPad)
+    {
+	static MenuOption timestamp = {id:TIMESTAMP_ID};
+	timestamp.text = "(" ~ util.timestamp ~ ")";
+	Menu menu = new Menu(txtPad.getShell);
+	addMenuOption(menu, timestamp, txtPad);
+	txtPad.setMenu(menu);
     }
 
 
@@ -809,7 +859,7 @@ public class GUI
 		    }
 		    else
 		    {
-			this.txtPad.setMenu(null);
+			addTimestampMenu(this.txtPad);
 			return;
 		    }
 		}
@@ -818,17 +868,17 @@ public class GUI
 		int start = selection.x;
 		int length = selection.y - selection.x;
 
-		// selection is past character count
+		// Selection is past character count.
 		if(this.txtPad.getCharCount <= start)
 		{
-		    this.txtPad.setMenu(null);
+		    addTimestampMenu(this.txtPad);
 		    return;
 		}
 
-		// no selection and no style underneath cursor - hide menu
+		// No selection and no style underneath cursor - hide menu.
 		if((length <= 0) && !this.txtPad.getStyleRangeAtOffset(start))
 		{
-		    this.txtPad.setMenu(null);
+		    addTimestampMenu(this.txtPad);
 		    return;
 		}
 
@@ -912,39 +962,35 @@ public class GUI
 		int length = selection.y - selection.x;
 		int end = selection.y;
 
-		// nothing selected and no style on this line
+		// Nothing selected and no style on this line.
 		int lineBegin = this.txtPad.getOffsetAtLine(this.txtPad.getLineAtOffset(start));
 		if(this.txtPad.getCharCount <= lineBegin) return;
+
+		static MenuOption separator1 = {style:DWT.SEPARATOR,
+						id:SEPARATOR1_ID};
+		static MenuOption timestamp = {id:TIMESTAMP_ID};
+		timestamp.text = "(" ~ util.timestamp ~ ")";
+		static MenuOption separator2 = {style:DWT.SEPARATOR,
+						id:SEPARATOR2_ID};
+		static MenuOption clear = {id:CLEAR_ID,
+					   text:CLEAR_MENU_ITEM_TEXT};
+
+		// Add option to remove style from paragraph.
 		StyleRange style = this.txtPad.getStyleRangeAtOffset(lineBegin);
 		if((length <= 0) && style)
 		{
-		    foreach(MenuItem item; this.txtPadMenu.getItems)
-		    {
-			Data itemData = cast(Data)item.getData;
-			if(CLEAR_ID == itemData.get("id"))
-			    return;
-		    }
-
-		    // add option to remove style from paragraph
-		    MenuItem sepItem = new MenuItem(this.txtPadMenu, DWT.SEPARATOR);
-		    sepItem.setData(new Data("id", SEPARATOR_ID));
-		    MenuItem clearItem = new MenuItem(this.txtPadMenu, DWT.NONE);
-		    clearItem.setData(new Data("id", CLEAR_ID));
-		    clearItem.setText(CLEAR_MENU_ITEM_TEXT);
-		    DateTime calendar;
-		    addMenuItemListener(clearItem, this.txtPadMenu, this.txtPad, calendar);
+		    addMenuOption(this.txtPadMenu, separator1, this.txtPad);
+		    addMenuOption(this.txtPadMenu, timestamp, this.txtPad);
+		    addMenuOption(this.txtPadMenu, separator2, this.txtPad);
+		    addMenuOption(this.txtPadMenu, clear, this.txtPad);
 		}
-		// remove separator and option to remove style from paragraph
+		// Remove separator and option to remove style from paragraph.
 		else
 		{
-		    foreach(MenuItem item; this.txtPadMenu.getItems)
-		    {
-			Data itemData = cast(Data)item.getData;
-			if(SEPARATOR_ID == itemData.get("id"))
-			    item.dispose;
-			if(CLEAR_ID == itemData.get("id"))
-			    item.dispose;
-		    }
+		    removeMenuOption(this.txtPadMenu, separator1);
+		    removeMenuOption(this.txtPadMenu, timestamp);
+		    removeMenuOption(this.txtPadMenu, separator2);
+		    removeMenuOption(this.txtPadMenu, clear);
 		}
 		this.txtPad.setMenu(this.txtPadMenu);
 	    }
@@ -952,19 +998,17 @@ public class GUI
     }
 
 
-    private void addMenuItemListener(MenuItem menuItem, Menu menu, StyledText text, DateTime cal)
+    private void addMenuItemListener(MenuItem menuItem, Menu menu, StyledText text)
     {
-	menuItem.addSelectionListener(new class(menuItem, menu, text, cal) SelectionAdapter
+	menuItem.addSelectionListener(new class(menuItem, menu, text) SelectionAdapter
         {
 	    MenuItem item;
 	    Menu txtPadMenu;
-	    DateTime calendar;
 	    StyledText txtPad;
-	    this(MenuItem mi, Menu m, StyledText t, DateTime d)
+	    this(MenuItem mi, Menu m, StyledText t)
 	    {
 		this.item = menuItem;
 		this.txtPadMenu = menu;
-		this.calendar = cal;
 		this.txtPad = text;
 	    }
 
@@ -989,9 +1033,15 @@ public class GUI
 		    int length = this.txtPad.getLine(titlePos).length;
 		    this.txtPad.replaceTextRange(this.txtPad.getOffsetAtLine(titlePos), length + 1, "");
 		    Storage.setCategoryRanges(null, styleRangesToCategoryRanges(this.txtPad.getStyleRanges));
-
 		    return;
 		}   
+
+		if(itemData.get("id") == TIMESTAMP_ID)
+		{
+		    this.txtPad.insert(this.item.getText);
+		    this.txtPad.setCaretOffset(this.txtPad.getCaretOffset + this.item.getText.length);
+		    return;
+		}
 
 		Point selection = this.txtPad.getSelection;
 
@@ -1350,10 +1400,10 @@ public class GUI
 	    addCategoryNameModifyListener(catText, textPadMenu, textPad);
 
 	    // add category to textPad's context menu
-	    MenuItem catItem = new MenuItem(textPadMenu, DWT.NONE);
-	    catItem.setData(new Data("id", id));
-	    catItem.setText(name);
-	    addMenuItemListener(catItem, textPadMenu, textPad, calendar);
+	    static MenuOption catItem;
+	    catItem.id = id;
+	    catItem.text = name;
+	    addMenuOption(textPadMenu, catItem, textPad);
  	}
 
 	textPad.setMenu(textPadMenu);
@@ -1442,10 +1492,10 @@ public class GUI
 
 		    // add category to textPad's context menu
 		    // 0 puts menu item on top of menu
-		    MenuItem catItem = new MenuItem(this.txtPadMenu, DWT.NONE, 0);
-		    catItem.setData(new Data("id", id));
-		    catItem.setText(NEW_CATEGORY_TEXT);
-		    addMenuItemListener(catItem, this.txtPadMenu, this.txtPad, calendar);
+		    static MenuOption catItem = {text:NEW_CATEGORY_TEXT,
+						 index:0};
+		    catItem.id = id;
+		    addMenuOption(this.txtPadMenu, catItem, this.txtPad);
 		}
 
 		// Redraw parent container.
