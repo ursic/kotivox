@@ -25,13 +25,12 @@ import Integer = tango.text.convert.Integer;
 import Txt = tango.text.Util;
 import Clock = tango.time.Clock;
 import tango.stdc.stringz;
+import tango.stdc.time;
 import Unicode = tango.text.Unicode;
 import tango.core.Array;
 import tango.math.random.Kiss;
 
 import dwt.widgets.DateTime;
-
-extern (C) char* day_name(char* date, int year, int month, int day);
 
 
 /*
@@ -39,8 +38,22 @@ extern (C) char* day_name(char* date, int year, int month, int day);
  */
 char[] dayName(int year, int month, int day)
 {
-    char* date;
-    return fromStringz(day_name(date, year, month, day));
+    char[36] dayStr;
+    char* daybuf = toStringz(dayStr);
+    char* format = "%A, %e. %B, %Y";
+    static tm time_str;
+
+    time_str.tm_year = year - 1900;
+    time_str.tm_mon = month - 1;
+    time_str.tm_mday = day;
+    time_str.tm_hour = 0;
+    time_str.tm_min = 0;
+    time_str.tm_sec = 1;
+    time_str.tm_isdst = -1;
+    if (mktime(&time_str) != -1)
+      strftime(daybuf, 36, format, &time_str);
+
+    return fromStringz(daybuf);
 }
 
 
