@@ -1593,7 +1593,7 @@ public class GUI
 		    int noteListWidth = MAIN_WINDOW_LEFT_COLUMN_WIDTH - 60;
 
 		    char[] id = Integer.toString(Storage.addNote);
-		    char[] name = NOTES_TEXT ~ " " ~ id;
+		    char[] name = NOTES_TEXT ~ " " ~ Integer.toString(Integer.toInt(id) + 1);
 
 		    GridData gdText = new GridData(noteListWidth, DWT.DEFAULT);
 		    Text noteText = new Text(this._noteEditList, DWT.NONE);
