@@ -536,11 +536,12 @@ private class Note
 
     static private Note[] notes;
 
-    this(int id, char[] name, char[] content = "")
+    this(int id, char[] name, char[] filename = "", char[] content = "")
     {
 	this.id = id;
 	this.name = sanitizeNoteName(name);
-	this.filename = randStr ~ NOTE_FILE_EXTENSION;
+	if(0 == filename.length) filename = randStr ~ NOTE_FILE_EXTENSION;
+	this.filename = filename;
 	this.content = content;
     }
 
@@ -695,6 +696,7 @@ private class Note
 
 	    notes ~= new Note(Integer.toInt(settings[settings.length - 1]),
 			      name,
+			      file.file,
 			      content);
 	}
     }

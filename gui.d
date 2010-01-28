@@ -432,6 +432,37 @@ public class GUI
     }
 
 
+    private void login(Shell shell, Label msgLabel)
+    {
+	if(contains(this.authValues.keys, "usernameL") &&
+	   contains(this.authValues.keys, "passwordL"))
+	{
+	    char[][] userData = [this.authValues["usernameL"],
+				 this.authValues["passwordL"]];
+	    char[] errorMsg;
+	    if(Auth.login(userData, errorMsg)) drawMainWindow(shell);
+	    else msgLabel.setText(errorMsg);
+	}
+    }
+
+
+    private void register(Shell shell, Label msgLabel)
+    {
+	if(contains(this.authValues.keys, "usernameR") &&
+	   contains(this.authValues.keys, "passwordR") &&
+	   contains(this.authValues.keys, "passwordRR"))
+	{
+	    char[][] userData = [this.authValues["usernameR"],
+				 this.authValues["passwordR"],
+				 this.authValues["passwordRR"]];
+	    char[] errorMsg;
+	    if(Auth.register(userData, errorMsg)) drawMainWindow(shell);
+	    else msgLabel.setText(errorMsg);
+	}
+	else msgLabel.setText(CANNOT_REGISTER);
+    }
+
+
     private void addShellListener(Shell shell)
     {
 	shell.addShellListener(new class(shell) ShellAdapter
@@ -469,6 +500,45 @@ public class GUI
     }
 
 
+    /*
+      Login or register user when ENTER is pressed
+      in either password field
+     */
+    private void addFormListener(Text textInput, Label labelInput)
+    {
+	textInput.addKeyListener(new class(labelInput) KeyListener
+	{
+	    Label msgLabel;
+	    Shell newShell;
+	    this(Label msgLabel)
+	    {
+		this.msgLabel = labelInput;
+		this.newShell = shell;
+	    }
+	    public void keyPressed(KeyEvent event)
+            {
+		if(KEY_ENTER == event.keyCode)
+		{
+		    switch((cast(Data)event.widget.getData).get("name"))
+		    {
+		    case "passwordL":
+			login(this.newShell, this.msgLabel);
+			break;
+
+                    case "passwordRR":
+			register(this.newShell, this.msgLabel);
+			break;
+
+                    default:
+			Stdout("Unknown button").newline();
+		    }
+		}
+	    }
+	    public void keyReleased(KeyEvent event){}
+	});
+    }
+
+
     private void addButtonListener(Button buttonInput, Label labelInput)
     {
 	buttonInput.addListener(DWT.Selection, new class(labelInput) Listener
@@ -480,41 +550,16 @@ public class GUI
 		this.msgLabel = labelInput;
 		this.newShell = shell;
 	    }
-	    
 	    public void handleEvent(Event event)
             {
 		switch(event.widget.getNameText)
 		{
 		    case "Login":
-		    if(contains(this.outer.authValues.keys, "usernameL") &&
-		       contains(this.outer.authValues.keys, "passwordL"))
-	            {
-			char[][] userData = [this.outer.authValues["usernameL"],
-					     this.outer.authValues["passwordL"]];
-			char[] errorMsg;
-			if(Auth.login(userData, errorMsg))
-			    drawMainWindow(this.newShell);
-			else
-			    msgLabel.setText(errorMsg);
-		    }
+			login(this.newShell, this.msgLabel);
 		    break;
 
                     case "Register":
-		    if(contains(this.outer.authValues.keys, "usernameR") &&
-		       contains(this.outer.authValues.keys, "passwordR") &&
-		       contains(this.outer.authValues.keys, "passwordRR"))
-	            {
-			char[][] userData = [this.outer.authValues["usernameR"],
-					     this.outer.authValues["passwordR"],
-					     this.outer.authValues["passwordRR"]];
-			char[] errorMsg;
-			if(Auth.register(userData, errorMsg))
-			    drawMainWindow(this.newShell);
-			else
-			    msgLabel.setText(errorMsg);
-		    }
-		    else
-			msgLabel.setText("I don't have enough data for registration.\nPlease enter username and matching passwords.");
+			register(this.newShell, this.msgLabel);
 		    break;
 
                     default:
@@ -649,6 +694,9 @@ public class GUI
 	addTextListener(tUsernameR);
 	addTextListener(tPasswordR);
 	addTextListener(tPasswordRR);
+
+	addFormListener(tPasswordL, lMsg);
+	addFormListener(tPasswordRR, lMsg);
 
 	addButtonListener(bLogin, lMsg);
 	addButtonListener(bRegister, lMsg);

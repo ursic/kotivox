@@ -28,9 +28,9 @@ import io;
 
 void main()
 {
-    setAppDirs();
-    GUI gui = new GUI();
-    gui.prepareRegisterWindow();
-    readConfig();
-    gui.draw();
+    setAppDirs;
+    GUI gui = new GUI;
+    gui.prepareRegisterWindow;
+    readConfig;
+    gui.draw;
 }
