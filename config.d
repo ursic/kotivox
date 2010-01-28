@@ -68,6 +68,7 @@ public const char[] ADD_REMOVE_BUTTON_TOOLTIP = "Add/Remove";
 public const int MAX_CATEGORY_NAME_LENGTH = 30;
 
 public const int KEY_ENTER = 13;
+public const int KEY_ENTER_NUMPAD = 16777296;
 public const int KEY_ESC = 27;
 public const int KEY_F = 102;
 public const int KEY_R = 114;

@@ -517,7 +517,7 @@ public class GUI
 	    }
 	    public void keyPressed(KeyEvent event)
             {
-		if(KEY_ENTER == event.keyCode)
+		if(KEY_ENTER == event.keyCode || KEY_ENTER_NUMPAD == event.keyCode)
 		{
 		    switch((cast(Data)event.widget.getData).get("name"))
 		    {
@@ -1171,7 +1171,7 @@ public class GUI
 	    }
 	    public void keyPressed(KeyEvent event)
 	    {
-		if(KEY_ENTER == event.keyCode)
+		if(KEY_ENTER == event.keyCode || KEY_ENTER_NUMPAD == event.keyCode)
 		{
 		    // Save current text so it becomes searchable,
 		    // and cannot be overwritten when jump to search result is made.
@@ -1857,7 +1857,7 @@ public class GUI
 	    public void keyPressed(KeyEvent event)
 	    {
 		// mark next match
-		if(KEY_ENTER == event.keyCode)
+		if(KEY_ENTER == event.keyCode || KEY_ENTER_NUMPAD == event.keyCode)
 		{
 		    char[] find = (cast(Data)this.fnd.getData).get("find");
 		    char[][] finds = Txt.split(find, " ");
@@ -1870,7 +1870,8 @@ public class GUI
 		    char[][] newFinds = shiftLeft(finds);
 
 		    // mark previous match
-		    if(((event.stateMask & DWT.SHIFT) == DWT.SHIFT) && (KEY_ENTER == event.keyCode))
+		    if(((event.stateMask & DWT.SHIFT) == DWT.SHIFT) &&
+		       (KEY_ENTER == event.keyCode || KEY_ENTER_NUMPAD == event.keyCode))
 			newFinds = shiftRight(finds);
 
 		    int start = Integer.toInt(newFinds[0]);
