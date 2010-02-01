@@ -1207,9 +1207,10 @@ public class GUI
 	    public void handleEvent(Event event)
 	    {
 		auto date = Clock.Clock().toDate.date;
-		this.cal.setDay(date.day);
+		this.cal.setDay(1);
 		this.cal.setYear(date.year);
 		this.cal.setMonth(date.month - 1);
+		this.cal.setDay(date.day);
 		markCalendarDays(this.cal);
 		hideSearchChildren(this.txtPad.getParent);
 		saveText(this.txtPad);
