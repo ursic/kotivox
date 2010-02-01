@@ -29,13 +29,14 @@ import tango.io.digest.Sha512;
 import Integer = tango.text.convert.Integer;
 
 import config;
+import util;
 import io;
 import storage;
 
 
 private class Validator
 {
-    // checks whether given user exists
+    // Check whether given user exists.
     static private bool usernameExists(char[] username)
     {
 	char[] userDirPath = APP_DIR ~ USER_DIR ~ "/" ~ usernameToIdent(username);
@@ -54,49 +55,49 @@ private class Validator
 	char[] password1 = userData[1];
 	char[] password2 = userData[2];
 
-	// do passwords match?
+	// Do passwords match?
 	if(password1 != password2)
 	{
 	    errorMsg = "Please enter matching passwords.";
 	    return false;
 	}
 
-	// is username taken?
+	// Is username taken?
 	if(usernameExists(username))
 	{
 	    errorMsg = "Username " ~ username ~ " is already taken.\nPlease choose another one.";
 	    return false;
 	}
 
-	// username should be 3 or more characters in length
+	// Username should be 3 or more characters in length.
 	if(username.length < 3)
 	{
 	    errorMsg = "Username is too short.\nPlease make it at least 3 characters long.";
 	    return false;
 	}
 
-	// username can be at most 100 characters long
+	// Username can be at most 100 characters long.
 	if(100 < username.length)
 	{
 	    errorMsg = "Username is too long.\nPlease make it 100 characters or shorter.";
 	    return false;
 	}
 
-	// password must be at least 10 characters long
+	// Password must be at least 10 characters long.
 	if(password1.length < 10)
 	{
 	    errorMsg = "Password is too short.\nPlease make it at least 10 characters long.";
 	    return false;
 	}
 
-	// password can be at most 100 characters long
+	// Password can be at most 100 characters long.
 	if(100 < password1.length)
 	{
 	    errorMsg = "Password is too long.\nPlease make it 100 characters or shorter.";
 	    return false;
 	}
 
-	// password must contain at least 3 numbers
+	// Password must contain at least 3 numbers.
 	int i = 0;
 	foreach(char chr; password1)
 	{
@@ -110,7 +111,7 @@ private class Validator
 	    return false;
 	}
 	    
-	// password must contain at least 4 letters
+	// Password must contain at least 4 letters.
 	if((password1.length - i) < 4)
 	{
 	    errorMsg = "Password is inadequate.\nPlease make it contain 4 letters or more.";
@@ -173,11 +174,8 @@ public class Auth
 
     static private char[] passwordToIdent(char[] password)
     {
-	Sha512 digest = new Sha512;
-	digest.update(cast(ubyte[])password);
-	this.cipherKey = digest.hexDigest();
-	digest.update(cast(ubyte[])(password ~ this.cipherKey));
-	return digest.hexDigest();
+	this.cipherKey = digest(password);
+	return digest(password ~ this.cipherKey);
     }
 
 
@@ -222,7 +220,5 @@ public class Auth
 // converts given username to user ident
 char[] usernameToIdent(char[] username)
 {
-  Sha512 digest = new Sha512;
-  digest.update(cast(ubyte[])username);
-  return digest.hexDigest()[0..8];
+    return digest(username)[0..8];
 }

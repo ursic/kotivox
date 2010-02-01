@@ -29,6 +29,7 @@ import tango.stdc.time;
 import Unicode = tango.text.Unicode;
 import tango.core.Array;
 import tango.math.random.Kiss;
+import tango.io.digest.Sha512;
 
 import dwt.widgets.DateTime;
 
@@ -239,4 +240,15 @@ char[] randStr(int strLen = 8)
     }
 
     return randStr;
+}
+
+
+/*
+  Returns digest of str.
+ */
+char[] digest(char[] str)
+{
+    Sha512 digest = new Sha512;
+    digest.update(cast(ubyte[])str);
+    return digest.hexDigest();
 }

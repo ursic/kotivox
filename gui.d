@@ -1202,14 +1202,14 @@ public class GUI
 		this.cal = calendar;
 		this.txtPad = text;
 	    }
-	    // doing it the long way, because setDate of DateTime
-	    // calls DateTime Selection listener twice for some reason
+	    // Doing it the long way, because setDate of DateTime
+	    // calls DateTime Selection listener twice for some reason.
 	    public void handleEvent(Event event)
 	    {
 		auto date = Clock.Clock().toDate.date;
+		this.cal.setDay(date.day);
 		this.cal.setYear(date.year);
 		this.cal.setMonth(date.month - 1);
-		this.cal.setDay(date.day);
 		markCalendarDays(this.cal);
 		hideSearchChildren(this.txtPad.getParent);
 		saveText(this.txtPad);

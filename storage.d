@@ -130,6 +130,7 @@ private class Category
     private static Category[] categories;
     // category retrieval counter
     private static int catRetrCount = 0;
+    private static char[] origDigest;
 
     this(int id, char[] name)
     {
@@ -202,7 +203,7 @@ private class Category
 	char[] content;
 	foreach(Category c; categories)
 	{
-	    // skip categories with empty names
+	    // Skip categories with empty names.
 	    if(Txt.trim(c.name).length <= 0) continue;
 
 	    content ~= Integer.toString(c.id) ~ " " ~ c.name ~ "\n";
@@ -210,7 +211,7 @@ private class Category
 
 	char[] catFileName = Auth.userDirPath ~ USER_CATEGORIES_FILE;
 
-	// no categories, remove file if exists
+	// No categories, remove file if exists.
 	if(content.length <= 0)
 	{
 	    FilePath catFile = new FilePath(catFileName);
@@ -219,10 +220,14 @@ private class Category
 	    return;
 	}
 
+	// Unchanged.
+	if(digest(content) == Category.origDigest) return;
+
 	// encrypt categories into file
 	k_encrypt_from_string(content,
 			      catFileName,
 			      Auth.cipherKey);
+	Category.origDigest = digest(content);
     }
 
     /*
@@ -239,6 +244,8 @@ private class Category
 	char[] content;
 	char[] text = k_decrypt_to_string(filename, textp, Auth.cipherKey);
 	foreach(char c; text) content ~= c;
+
+	Category.origDigest = digest(content);
 
 	foreach(char[] id, char[] name; parseLines(content))
 	    categories ~= new Category(Integer.toInt(id), name);
@@ -533,6 +540,7 @@ private class Note
     private char[] name;
     private char[] filename;
     private char[] content;
+    private char[] origDigest;
 
     static private Note[] notes;
 
@@ -543,12 +551,13 @@ private class Note
 	if(0 == filename.length) filename = randStr ~ NOTE_FILE_EXTENSION;
 	this.filename = filename;
 	this.content = content;
+	this.origDigest = digest(this.content);
     }
 
     static private int addNote(char[] name = "")
     {
 	int id = getFreeSlot(getIds);
-	if(name.length <= 0) name = NOTES_TEXT ~ " " ~ Integer.toString(id);
+	if(name.length <= 0) name = NOTES_TEXT ~ " " ~ Integer.toString(id + 1);
 	notes ~= new Note(id, name);
 	return id;
     }
@@ -601,8 +610,6 @@ private class Note
 		break;
 	    }
 	}
-// 	foreach(note; notes)
-// 	  Stdout(note.content).newline;
     }
 
     static private char[] noteContent(int id)
@@ -642,7 +649,7 @@ private class Note
 	    char[] noteFilePath = Auth.userDirPath ~ note.filename;
 	    char[] name = Txt.trim(note.name);
 	    
-	    // skip note with empty name
+	    // Skip note with empty name.
 	    if(name.length <= 0)
 	    {
 		// delete note file if exists
@@ -652,13 +659,18 @@ private class Note
 		continue;
 	    }
 
+	    noteFiles ~= noteFilePath;
+
+	    // Skip note with unchanged content.
+	    if(digest(note.content) == note.origDigest)	continue;
+
 	    // Write name of the note and its index
 	    // number on the top line of its content. -- a very primitive header
 	    char[] content = note.name ~ " " ~ Integer.toString(note.id) ~ "\n" ~ note.content;
 	    k_encrypt_from_string(content,
 				  noteFilePath,
 				  Auth.cipherKey);
-	    noteFiles ~= noteFilePath;
+	    note.origDigest = digest(note.content);
 	}
 
 	// Remove obsolete note files.
@@ -778,7 +790,6 @@ public class Storage
     {
 	int[][] catRanges = Day.getCategoryRanges(getTodayFileName);
 	char[] catRangesFileName = Auth.userDirPath ~ getTodayFileName ~ USER_CATEGORY_RANGES_FILE_EXTENSION;
-
 	// No category ranges for today, remove file.
 	if(catRanges.length <= 0)
 	{
