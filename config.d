@@ -65,8 +65,6 @@ public const char[] NEW_CATEGORY_TEXT = "New category";
 public const char[] CLEAR_MENU_ITEM_TEXT = "Clear";
 public const char[] ADD_REMOVE_BUTTON_TOOLTIP = "Add/Remove";
 
-public const int MAX_CATEGORY_NAME_LENGTH = 30;
-
 public const int KEY_ENTER = 13;
 public const int KEY_ENTER_NUMPAD = 16777296;
 public const int KEY_ESC = 27;
@@ -98,3 +96,6 @@ public int INCREMENTAL_SEARCH_BOX_HEIGHT = 68;
 
 public const char[] NOTE_FILE_EXTENSION = ".kn";
 public const char[] NOTES_TEXT = "Notes";
+
+public const char[] CHAIN_FILE_EXTENSION = ".ksc";
+public const char[] CHAIN_TEXT = "Seinfeld's chains";

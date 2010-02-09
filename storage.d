@@ -127,27 +127,15 @@ private class Category
 {
     private int id;
     private char[] name;
-    private static Category[] categories;
+    static private Category[] categories;
     // category retrieval counter
-    private static int catRetrCount = 0;
-    private static char[] origDigest;
+    static private int catRetrCount = 0;
+    static private char[] origDigest;
 
     this(int id, char[] name)
     {
 	this.id = id;
 	this.name = name;
-    }
-
-    /*
-      Shorten and trim category name to first 20 characters.
-    */
-    static private char[] sanitizeCategoryName(char[] name)
-    {
-	char[] catName = name;
-	if(MAX_CATEGORY_NAME_LENGTH < name.length)
-	    catName = name[0..MAX_CATEGORY_NAME_LENGTH];
-	catName = Txt.trim(catName);
-	return catName;
     }
 
     static private int[] getIds()
@@ -164,7 +152,7 @@ private class Category
     static private int addCategory(char[] name)
     {
 	int id = getFreeSlot(getIds);
-	categories ~= new Category(id, sanitizeCategoryName(name));
+	categories ~= new Category(id, sanitizeStr(name));
 	return id;
     }
 
@@ -177,7 +165,6 @@ private class Category
 	foreach(Category category; categories)
 	{
 	    if(category.id == id) continue;
-
 	    new_categories ~= category;
 	}
 	categories = new_categories;
@@ -189,7 +176,7 @@ private class Category
 	{
 	    if(c.id == id)
 	    {
-		c.name = sanitizeCategoryName(name);
+		c.name = sanitizeStr(name);
 		break;
 	    }
 	}
@@ -223,7 +210,7 @@ private class Category
 	// Unchanged.
 	if(digest(content) == Category.origDigest) return;
 
-	// encrypt categories into file
+	// Encrypt categories into file.
 	k_encrypt_from_string(content,
 			      catFileName,
 			      Auth.cipherKey);
@@ -437,7 +424,7 @@ private class SearchResultPage
      */
     static private bool compileSearchResults(char[] keywordStr, int[] categories)
     {
-	// clear previous search
+	// Clear previous search.
 	resultPages = null;
 
 	char[] content;
@@ -448,17 +435,21 @@ private class SearchResultPage
 	    int end = day.text.length;
 	    int location = 0;
 	    char[] result;
+
+	    // Skip emtpy days.
+	    if(end <= 0) continue;
+
 	    entry: do
 	    {
 		location = Txt.locatePattern(Unicode.toLower(day.text),
 					     Unicode.toLower(keywordStr),
 					     location);
-		// match found
-		// prepend and append some text around keywordStr
-		// prepend link above the result
+		// Match found.
+		// Prepend and append some text around keywordStr.
+		// Prepend link above the result.
 		if((0 == location) || (location < end))
 		{
-		    // is the start of found match inside given categories?
+		    // Is the start of found match inside given categories?
 		    int[] invCategories = Category.invCategoryIDs(categories);
 		    foreach(id; invCategories)
 		    {
@@ -505,7 +496,7 @@ private class SearchResultPage
 	    }while(location < end);
 	}
 
-	// save what's left of search results
+	// Save what's left of search results.
 	if(0 < content.length)
 	    resultPages ~= new SearchResultPage(getNextIndex, content);
 
@@ -538,40 +529,40 @@ private class Note
 {
     private int id;
     private char[] name;
+    private char[] origName;
     private char[] filename;
     private char[] content;
     private char[] origDigest;
 
     static private Note[] notes;
 
-    this(int id, char[] name, char[] filename = "", char[] content = "")
+    this(char[] name, char[] filename = "", char[] content = "")
     {
-	this.id = id;
-	this.name = sanitizeNoteName(name);
-	if(0 == filename.length) filename = randStr ~ NOTE_FILE_EXTENSION;
+	this.id = getFreeSlot(getIds);
+	this.name = sanitizeStr(name);
+	this.origName = this.name;
+	if(filename.length <= 0) filename = randStr ~ NOTE_FILE_EXTENSION;
 	this.filename = filename;
 	this.content = content;
 	this.origDigest = digest(this.content);
     }
 
-    static private int addNote(char[] name = "")
+    static private int add()
     {
 	int id = getFreeSlot(getIds);
-	if(name.length <= 0) name = NOTES_TEXT ~ " " ~ Integer.toString(id + 1);
-	notes ~= new Note(id, name);
+	notes ~= new Note(NOTES_TEXT ~ " " ~ Integer.toString(id + 1));
 	return id;
     }
 
     /*
       Removes note of given id from notes array.
     */
-    static private void removeNote(int id)
+    static private void remove(int id)
     {
 	Note new_notes[];
 	foreach(note; notes)
 	{
 	    if(note.id == id) continue;
-
 	    new_notes ~= note;
 	}
 	notes = new_notes;
@@ -583,7 +574,7 @@ private class Note
 	foreach(note; notes)
 	    if(note.id == id) return note.name;
 
-	return "CANNOT FIND NOTE " ~ Integer.toString(id);
+	return "I CANNOT FIND NOTE " ~ Integer.toString(id) ~ ".";
     }
 
     // Set note name.
@@ -593,10 +584,9 @@ private class Note
 	{
 	    if(note.id == id)
 	    {
-		note.name = sanitizeNoteName(name);
+		note.name = sanitizeStr(name);
 		break;
 	    }
-
 	}
     }
 
@@ -627,18 +617,6 @@ private class Note
     }
 
     /*
-      Shorten and trim note title to first 20 characters.
-    */
-    static private char[] sanitizeNoteName(char[] name)
-    {
-	char[] noteName = name;
-	if(MAX_CATEGORY_NAME_LENGTH < name.length)
-	    noteName = name[0..MAX_CATEGORY_NAME_LENGTH];
-	noteName = Txt.trim(noteName);
-	return noteName;
-    }
-
-    /*
       Encrypt notes into files.
      */
     static private void saveNotes()
@@ -647,12 +625,11 @@ private class Note
 	foreach(note; notes)
 	{
 	    char[] noteFilePath = Auth.userDirPath ~ note.filename;
-	    char[] name = Txt.trim(note.name);
 	    
 	    // Skip note with empty name.
-	    if(name.length <= 0)
+	    if(note.name.length <= 0)
 	    {
-		// delete note file if exists
+		// Delete note file if exists.
 		FilePath noteFile = new FilePath(noteFilePath);
 		if(noteFile.exists) noteFile.remove;		
 
@@ -662,11 +639,10 @@ private class Note
 	    noteFiles ~= noteFilePath;
 
 	    // Skip note with unchanged content.
-	    if(digest(note.content) == note.origDigest)	continue;
+	    if((digest(note.content) == note.origDigest) && (note.origName == note.name)) continue;
 
-	    // Write name of the note and its index
-	    // number on the top line of its content. -- a very primitive header
-	    char[] content = note.name ~ " " ~ Integer.toString(note.id) ~ "\n" ~ note.content;
+	    // Write name of the note in first line.
+	    char[] content = note.name ~ "\n" ~ note.content;
 	    k_encrypt_from_string(content,
 				  noteFilePath,
 				  Auth.cipherKey);
@@ -686,7 +662,7 @@ private class Note
     {
 	foreach(file; (new FileScan)(Auth.userDirPath, NOTE_FILE_EXTENSION).files)
 	{
-	    // decrypt text and store it
+	    // Decrypt text and store it.
 	    char *textp;
 	    char[] textOut;
 	    char[] text = k_decrypt_to_string(file.path ~ file.file, textp, Auth.cipherKey);
@@ -694,20 +670,15 @@ private class Note
 
 	    char[][] lines = Txt.splitLines(textOut);
 
-	    // First line is primitive header containing note's name and index.
-	    auto settings = Txt.split(lines[0], " ");
-
-	    // in case name contains spaces
-	    char[] name;
-	    for(int i = 0; i < settings.length - 1; i++) name ~= " " ~ settings[i];
+	    // First line contains note's name.
+	    char[] name = lines[0];
 
 	    // The rest of the lines is content.
 	    char[] content = "";
 	    for(int i = 1; i < lines.length; i++)
 		content ~= lines[i] ~ "\n";
 
-	    notes ~= new Note(Integer.toInt(settings[settings.length - 1]),
-			      name,
+	    notes ~= new Note(name,
 			      file.file,
 			      content);
 	}
@@ -718,6 +689,231 @@ private class Note
 	char[][int] noteList;
 	foreach(note; notes) noteList[note.id] = note.name;
 	return noteList;
+    }
+}
+
+
+/**********************************************************************************************************
+ *   Jerry Seinfeld's task chain
+ *
+ *   Get a big wall calendar that has a whole year on one page
+ *   and hang it on a prominent wall.
+ *   Get a big red magic marker.
+ *
+ *   Each day that you do your task, put a big red X over that day.
+ *   "After a few days you'll have a chain. Just keep at it
+ *   and the chain will grow longer every day. You'll like seeing that chain,
+ *   especially when you get a few weeks under your belt.
+ *   Your only job next is to not break the chain."
+ *
+ *   "Don't break the chain."
+ *
+ *   http://lifehacker.com/software/motivation/jerry-seinfelds-productivity-secret-281626.php
+ *   http://www.thesimpledollar.com/2007/07/26/applying-jerry-seinfelds-chain-concept-to-personal-finance/
+ *********************************************************************************************************/
+private class Chain
+{
+    private int id;
+    private char[] name;
+    private char[] origName;
+    private char[] desc;
+    private char[] filename;
+    private int[] dates;
+    private char[] origDigest;
+    static private Chain[] chains;
+
+    this(char[] name, char[] desc = "", char[] filename = "", int[] dates = null)
+    {
+	this.id = getFreeSlot(getIds);
+	this.name = sanitizeStr(name);
+	this.origName = this.name;
+	this.desc = desc;
+	if(desc.length <= 0) this.desc = name;
+	if(filename.length <= 0) filename = randStr ~ CHAIN_FILE_EXTENSION;
+	this.filename = filename;
+	this.origDigest = digest(serialize(dates.sort));
+    }
+
+    static private int[] getIds()
+    {
+	int[] ids;
+	foreach(n; chains) ids ~= n.id;
+	return ids;
+    }
+
+    static private int add()
+    {
+	int id = getFreeSlot(getIds);
+	chains ~= new Chain(CHAIN_TEXT ~ " " ~ Integer.toString(id + 1));
+	return id;
+    }
+
+    static private void remove(int id)
+    {
+	Chain new_chains[];
+	foreach(chain; chains)
+	{
+	    if(chain.id == id) continue;
+	    new_chains ~= chain;
+	}
+	chains = new_chains;
+    }
+
+    static private int[] getChains()
+    {
+	int[] chainlist;
+	foreach(chain; chains) chainlist ~= chain.id;
+	return chainlist;
+    }
+
+    static private char[] chainName(int id)
+    {
+	foreach(chain; chains)
+	    if(chain.id == id) return chain.name;
+
+	return "I CANNOT FIND CHAIN " ~ Integer.toString(id) ~ ".";
+    }
+
+    static private void chainName(int id, char[] name)
+    {
+	foreach(chain; chains)
+	{
+	    if(chain.id == id)
+	    {
+		chain.name = sanitizeStr(name);
+		break;
+	    }
+	}
+    }
+
+    static private char[] chainDesc(int id)
+    {
+	foreach(chain; chains)
+	    if(chain.id == id) return chain.desc;
+
+	return "I CANNOT FIND CHAIN " ~ Integer.toString(id) ~ ".";
+    }
+
+    static private void chainDesc(int id, char[] desc)
+    {
+	foreach(chain; chains)
+	{
+	    if(chain.id == id)
+	    {
+		chain.desc = sanitizeStr(desc, 200, false);
+		break;
+	    }
+	}
+    }
+
+    /*
+      Add date to chain of given id.
+     */
+    static private void addDate(int id, int date)
+    {
+	foreach(chain; chains)
+	    if(chain.id == id)
+	    {
+		if(!contains(chain.dates, date))
+		{
+		    chain.dates ~= date;
+		    break;
+		}
+	    }
+    }
+
+    /*
+      Remove date from chain of given id.
+     */
+    static private void removeDate(int id, int date)
+    {
+	foreach(chain; chains)
+	    if(chain.id == id)
+	    {
+		chain.dates.removeInts(date);
+		break;
+	    }
+    }
+
+    /*
+      Encrypt chains into files.
+     */
+    static private void saveChains()
+    {
+	char[] chainFiles;
+	foreach(chain; chains)
+	{
+	    char[] chainFilePath = Auth.userDirPath ~ chain.filename;
+
+	    // Skip chain with empty name.
+	    if(chain.name.length <= 0)
+	    {
+		// Delete chain file if exists.
+		FilePath chainFile = new FilePath(chainFilePath);
+		if(chainFile.exists) chainFile.remove;
+
+		continue;
+	    }
+
+	    chainFiles ~= chainFilePath;
+
+	    // Skip chain with unchanged content.
+	    if((digest(serialize(chain.dates.sort)) == chain.origDigest) &&
+	       (chain.origName != chain.name))
+		continue;
+
+	    // Write description length in first line.
+	    // Write name in second line.
+	    // Following is description on the next line.
+	    // After description follow dates, each in its line.
+	    char[] content = Integer.toString(chain.desc.length);
+	    content ~= "\n" ~ chain.name;
+	    content ~= "\n" ~ chain.desc;
+	    char[] dates;
+	    foreach(date; chain.dates) dates ~= Integer.toString(date) ~ "\n";
+	    content ~= dates;
+	    k_encrypt_from_string(content,
+				  chainFilePath,
+				  Auth.cipherKey);
+	    chain.origDigest = digest(serialize(chain.dates.sort));
+	}
+
+	// Remove obsolete chain files.
+	foreach(file; (new FileScan)(Auth.userDirPath, CHAIN_FILE_EXTENSION).files)
+	    if(!contains(chainFiles, file.path ~ file.file))
+		file.remove;
+    }
+
+    /*
+      Decrypt chains from files.
+     */
+    static private void loadChains()
+    {
+	foreach(file; (new FileScan)(Auth.userDirPath, CHAIN_FILE_EXTENSION).files)
+	{
+	    // Decrypt text and store it.
+	    char *textp;
+	    char[] textOut;
+	    char[] text = k_decrypt_to_string(file.path ~ file.file, textp, Auth.cipherKey);
+	    foreach(char c; text) textOut ~= c;
+
+	    char[][] lines = Txt.splitLines(textOut);
+	    int descLen = Integer.toInt(lines[0]);
+	    char[] name = lines[1];
+	    char[] desc = lines[2][0..descLen];
+	    int[] dates;
+	    if((8 + descLen) == lines[2].length)
+	    {
+		dates ~= Integer.toInt(lines[2][descLen..$]);
+		// Subsequent lines are dates.
+		for(int i = 3; i < lines.length - 1; i++)
+		    dates ~= Integer.toInt(lines[i]);
+	    }
+	    chains ~= new Chain(name,
+				desc,
+				file.file,
+				dates);
+	}
     }
 }
 
@@ -740,6 +936,7 @@ public class Storage
 	Category.saveCategories;
 	saveCategoryRanges;
 	Note.saveNotes;
+	Chain.saveChains;
 
 	char[] textFilePath = Auth.userDirPath ~ getTodayFileName ~ USER_DAY_FILE_EXTENSION;
 
@@ -915,6 +1112,7 @@ public class Storage
 	Category.loadCategories;
 	loadCategoryRanges;
 	Note.loadNotes;
+	Chain.loadChains;
     }
 
     static public char[] search(char[] keywords, int[] categories)
@@ -971,14 +1169,14 @@ public class Storage
 	return days;
     }
 
-    static public int addNote(char[] name = "")
+    static public int addNote()
     {
-	return Note.addNote(name);
+	return Note.add;
     }
 
     static public void removeNote(int id)
     {
-	Note.removeNote(id);
+	Note.remove(id);
     }
 
     static public char[] noteName(int id)
@@ -1006,4 +1204,54 @@ public class Storage
     {
 	return Note.getNotes;
     }
+
+    static public int addChain()
+    {
+	return Chain.add;
+    }
+
+    static public void removeChain(int id)
+    {
+	Chain.remove(id);
+    }
+
+    static public int[] getChains()
+    {
+	return Chain.getChains;
+    }
+
+    static public char[] chainName(int id)
+    {
+	return Chain.chainName(id);
+    }
+
+    static public void chainName(int id, char[] name)
+    {
+	Chain.chainName(id, name);
+    }
+
+    static public char[] chainDesc(int id)
+    {
+	return Chain.chainDesc(id);
+    }
+
+    static public void chainDesc(int id, char[] desc)
+    {
+	Chain.chainDesc(id, desc);
+    }
+
+    static public void addDate(int chainID, int date)
+    {
+	Chain.addDate(chainID, date);
+    }
+
+    static public void removeDate(int chainID, int date)
+    {
+	Chain.removeDate(chainID, date);
+    }
+
+//     static public void saveChains()
+//     {
+// 	Chain.saveChains;
+//     }
 }

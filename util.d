@@ -33,7 +33,6 @@ import tango.io.digest.Sha512;
 
 import dwt.widgets.DateTime;
 
-
 /*
   Return formatted date string.
  */
@@ -251,4 +250,43 @@ char[] digest(char[] str)
     Sha512 digest = new Sha512;
     digest.update(cast(ubyte[])str);
     return digest.hexDigest();
+}
+
+
+/*
+  Shorten and trim given string.
+*/
+char[] sanitizeStr(char[] instr, int strlen = 30, bool singleLine = true)
+{
+    char[] str = instr;
+    if(strlen < instr.length)
+	str = instr[0..strlen];
+    str = Txt.trim(str);
+    if(singleLine) str = Txt.substitute(str, "\n", "");
+    return str;
+}
+
+
+/*
+  Remove all matching integers from given array.
+*/
+void removeInts(ref int[] array, int element)
+{
+    int[] elements;
+    foreach(el; array)
+    {
+	if(el == element) continue;
+	elements ~= el;
+    }
+    array = elements;
+}
+
+/*
+  Concatenate array of integers and return resulting string.
+*/
+char[] serialize(int[] array)
+{
+    char[] str;
+    foreach(el; array) str ~= Integer.toString(el);
+    return str;
 }

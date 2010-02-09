@@ -1479,8 +1479,8 @@ public class GUI
 
 	    public void handleEvent(Event event)
 	    {
-		// remove categories with empty names
-		// and belonging checkboxes
+		// Remove categories with empty names
+		// and belonging checkboxes.
 		Button b;
 		bool disposed = false;
 		foreach(Control c; this._catEditList.getChildren)
@@ -1499,7 +1499,7 @@ public class GUI
  			    t.dispose;
 			    disposed = true;
 
-			    // remove category from textPad's context menu
+			    // Remove category from textPad's context menu.
 			    foreach(catItem; this.txtPadMenu.getItems)
 			    {
 				int itemId = Integer.toInt((cast(Data)catItem.getData).get("id"));
@@ -1513,7 +1513,7 @@ public class GUI
 		    }
 		}
 
-		// add new category and checkbox if none have been disposed
+		// Add new category and checkbox if none have been disposed.
 		if(!disposed)
 		{
 		    int catCheckWidth = 24;
@@ -1583,7 +1583,7 @@ public class GUI
 	int noteListWidth = MAIN_WINDOW_LEFT_COLUMN_WIDTH - 60;
 	Color noteTextBack = getColor(CATEGORY_LIST_BACKGROUND_COLOR);
 
-	// populate note list box with saved user notes
+	// Populate note list box with saved user notes.
 	foreach(id, name; Storage.getNotes)
 	{
 	    GridData gdNoteName = new GridData(noteListWidth, DWT.DEFAULT);
@@ -1593,7 +1593,7 @@ public class GUI
 	    noteText.setData(new Data("id", Integer.toString(id)));
 	    noteText.setText(name);
 	    noteText.setBackground(noteTextBack);
-	    // prevent default menu
+	    // Prevent default menu.
 	    noteText.setMenu(new Menu(noteText));
 	    addNoteNameModifyListener(noteText);
 	    addNoteFocusListener(noteText, textPad);
@@ -1610,7 +1610,7 @@ public class GUI
 	    Composite _noteEditList;
 	    ScrolledComposite _scn;
 	    StyledText txtPad;
-	    this(Composite c, ScrolledComposite _s, StyledText t)
+	    this(Composite c, ScrolledComposite s, StyledText t)
 	    {
 		this._noteEditList = noteEditList;
 		this._scn = scn;
@@ -1773,7 +1773,7 @@ public class GUI
 		// Load requested page.
 		if("PAGE" == event.text[0..4])
 		{
-		    char[] content = Storage.getSearchResultPage(Integer.toInt(event.text[4..event.text.length]));
+		    char[] content = Storage.getSearchResultPage(Integer.toInt(event.text[4..$]));
 		    content = "<a>CLOSE</a>\n\n" ~ content;
 		    content ~= "\n\n<a>CLOSE</a>";
 
@@ -1816,8 +1816,8 @@ public class GUI
 		    txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges(this.cal)));
 
 		    // highlight matching keywords and scroll to view
-  		    int start = Integer.toInt(Txt.split(event.text[12..event.text.length], "-")[0]);
-  		    int end = start + Txt.split(event.text[12..event.text.length], "-")[1].length;
+  		    int start = Integer.toInt(Txt.split(event.text[12..$], "-")[0]);
+  		    int end = start + Txt.split(event.text[12..$], "-")[1].length;
 		    txtPad.setSelection(start, end);
 		}
 	    }
@@ -1866,7 +1866,7 @@ public class GUI
 		    if(finds.length <= 2) return;
 		    
 		    int length = Integer.toInt(finds[0]);
-		    finds = finds[1..finds.length];
+		    finds = finds[1..$];
 
 		    char[][] newFinds = shiftLeft(finds);
 

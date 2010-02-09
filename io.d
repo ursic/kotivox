@@ -24,10 +24,8 @@ module io;
 import tango.io.FilePath;
 import tango.io.File;
 import tango.io.FileSystem;
-import tango.io.Stdout;
 import Txt = tango.text.Util;
 import tango.stdc.posix.unistd;
-
 import tango.stdc.stringz;
 
 import config;
@@ -37,10 +35,10 @@ private char[] configPath;
 private char[][char[]] settings;
 
 
-// set root directory - application directory
+// Set root directory - application directory.
 void setAppDirs()
 {
-    // executable full path finding LINUX-only
+    // Executable full path finding LINUX-only.
     int pid = getpid;
     char[200] lnk;
     char* link = toStringz(lnk);
@@ -57,15 +55,14 @@ void saveConfig(char[] path = "")
     char[] configFilePath = path;
     if("" == configFilePath)
     {
-	// make output directory when nonexistent
+	// Make output directory when nonexistent.
 	FilePath outputDir = new FilePath(CONFIG_DIR);
-	if (!outputDir.exists)
-	    outputDir.createFolder;
+	if(!outputDir.exists) outputDir.createFolder;
 
 	configFilePath = configPath;
     }
 
-    // convert to output format
+    // Convert to output format.
     char[] outString;
     foreach(setting, value; settings)
 	outString ~= setting ~ " " ~ value ~ "\n";
@@ -77,11 +74,9 @@ void saveConfig(char[] path = "")
 void readConfig(char[] path = "")
 {
     char[] filePath = configPath;
-    if(0 < path.length)
-	filePath = path;
+    if(0 < path.length) filePath = path;
 
-    if (!(new FilePath(filePath)).exists)
-	return;
+    if(!(new FilePath(filePath)).exists) return;
 
     settings = parseLines(cast(char[])(new File(filePath)).read);
 }
