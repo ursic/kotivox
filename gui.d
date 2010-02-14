@@ -517,7 +517,7 @@ public class GUI
 	    }
 	    public void keyPressed(KeyEvent event)
             {
-		if(KEY_ENTER == event.keyCode || KEY_ENTER_NUMPAD == event.keyCode)
+		if(KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode)
 		{
 		    switch((cast(Data)event.widget.getData).get("name"))
 		    {
@@ -1171,7 +1171,7 @@ public class GUI
 	    }
 	    public void keyPressed(KeyEvent event)
 	    {
-		if(KEY_ENTER == event.keyCode || KEY_ENTER_NUMPAD == event.keyCode)
+		if(KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode)
 		{
 		    // Save current text so it becomes searchable,
 		    // and cannot be overwritten when jump to search result is made.
@@ -1810,6 +1810,7 @@ public class GUI
 		    this.cal.setYear(year);
 		    this.cal.setMonth(month - 1);
 		    this.cal.setDay(day);
+		    markCalendarDays(this.cal);
 
 		    txtPad.setText(Storage.getText(this.cal));
 		    txtPad.setData(new Data("noteid", "-1"));
@@ -1858,7 +1859,7 @@ public class GUI
 	    public void keyPressed(KeyEvent event)
 	    {
 		// mark next match
-		if(KEY_ENTER == event.keyCode || KEY_ENTER_NUMPAD == event.keyCode)
+		if(KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode)
 		{
 		    char[] find = (cast(Data)this.fnd.getData).get("find");
 		    char[][] finds = Txt.split(find, " ");
@@ -1872,7 +1873,7 @@ public class GUI
 
 		    // mark previous match
 		    if(((event.stateMask & DWT.SHIFT) == DWT.SHIFT) &&
-		       (KEY_ENTER == event.keyCode || KEY_ENTER_NUMPAD == event.keyCode))
+		       (KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode))
 			newFinds = shiftRight(finds);
 
 		    int start = Integer.toInt(newFinds[0]);

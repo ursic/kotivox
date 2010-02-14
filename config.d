@@ -66,7 +66,7 @@ public const char[] CLEAR_MENU_ITEM_TEXT = "Clear";
 public const char[] ADD_REMOVE_BUTTON_TOOLTIP = "Add/Remove";
 
 public const int KEY_ENTER = 13;
-public const int KEY_ENTER_NUMPAD = 16777296;
+public const int KEY_KP_ENTER = 16777296;
 public const int KEY_ESC = 27;
 public const int KEY_F = 102;
 public const int KEY_R = 114;
