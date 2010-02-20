@@ -107,6 +107,20 @@ char[] dateToFileName(int _year, int _month, int _day)
 
 
 /*
+  Convert date to string and return it.
+  Return today's string if no date provided.
+ */
+char[] dateStr(DateTime date = null)
+{
+    if(date is null) return getTodayFileName;
+    
+    return dateToFileName(date.getYear,
+			  date.getMonth + 1,
+			  date.getDay);
+}
+
+
+/*
   Parse lines in str into associative array
   First value in line separated from the rest
   of the line by space is key in array

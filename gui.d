@@ -821,6 +821,126 @@ public class GUI
     }
 
 
+    /*
+      Emerge small text input beneath text pad for
+      incremental search in currently displayed text.
+    */
+    private void drawIncrementalFindInput(StyledText textPad)
+    {
+	Composite parent = textPad.getParent;
+
+	// Remove previous search results.
+	hideSearchChildren(parent);
+
+	// Draw text input one line high.
+	GridData gdFind = new GridData(DWT.FILL, DWT.FILL, true, true);
+	Text find = new Text(parent, DWT.BORDER);
+	find.setLayoutData(gdFind);
+	find.setMenu(new Menu(find));
+	setFont(cast(Control)find, FONT_SIZE_3, DWT.NONE);
+	find.setFocus;
+	(cast(GridData)textPad.getLayoutData).heightHint = parent.getSize.y - INCREMENTAL_SEARCH_BOX_HEIGHT;
+	parent.layout;
+
+	// Mark first match in the above text when
+	// three or more characters are entered.
+	find.addModifyListener(new class(find, textPad) ModifyListener
+        {
+	    Text fnd;
+	    StyledText txtPad;
+	    this(Text t, StyledText st)
+	    {
+		this.fnd = find;
+		this.txtPad = textPad;
+	    }
+	    public void modifyText(ModifyEvent event)
+	    {
+		this.txtPad.clearSelection(false);
+		if(this.fnd.getText.length < 3) return;
+
+		char[] text = this.txtPad.getText;
+		char[] keywords = this.fnd.getText;
+		int location = 0;
+		int[] locations;
+		char[] strLocations;
+		do
+		{
+		    location = Txt.locatePattern(Unicode.toLower(text),
+						 Unicode.toLower(keywords),
+						 location);
+		    // Match found, temporarily store it.
+		    if((0 == location) || (location < text.length))
+		    {
+			locations ~= location;
+			strLocations ~= Integer.toString(location) ~ " ";
+		    }
+
+		    location += keywords.length;
+		}while(location < text.length);
+
+		this.fnd.setData(new Data("find", Integer.toString(keywords.length) ~ " " ~ Txt.trim(strLocations)));
+		// Mark first find.
+		if(0 < locations.length)
+		    this.txtPad.setSelection(locations[0], locations[0] + keywords.length);
+	    }
+	});
+	
+	// Jump to next match, or previous one if SHIFT is held
+	// along with ENTER key.
+	find.addKeyListener(new class(find, textPad) KeyListener
+        {
+	    Text fnd;
+	    StyledText txtPad;
+	    char[] keywords;
+	    this(Text t, StyledText st)
+	    {
+		this.fnd = find;
+		this.txtPad = textPad;
+	    }
+	    public void keyPressed(KeyEvent event)
+	    {
+		// Mark next match.
+		if(KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode)
+		{
+		    char[] find = (cast(Data)this.fnd.getData).get("find");
+		    char[][] finds = Txt.split(find, " ");
+
+		    if(finds.length <= 2) return;
+		    
+		    int length = Integer.toInt(finds[0]);
+		    finds = finds[1..$];
+
+		    char[][] newFinds = shiftLeft(finds);
+
+		    // Mark previous match.
+		    if(((event.stateMask & DWT.SHIFT) == DWT.SHIFT) &&
+		       (KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode))
+			newFinds = shiftRight(finds);
+
+		    int start = Integer.toInt(newFinds[0]);
+
+		    char[] strFinds;
+		    foreach(f; newFinds)
+			strFinds ~= f ~ " ";
+
+		    this.fnd.setData(new Data("find", Integer.toString(length) ~ " " ~ Txt.trim(strFinds)));
+		    this.txtPad.setSelection(start, start + length);
+		}
+
+		if(KEY_ESC == event.keyCode)
+		{
+		    auto parent = this.fnd.getParent;
+		    this.fnd.dispose;
+		    parent.layout;
+		    this.txtPad.setFocus;
+		    this.txtPad.clearSelection(false);
+		}
+	    }
+	    public void keyReleased(KeyEvent event){}
+	});
+    }
+
+
     private void addTextPadKeyListener(StyledText text, DateTime cal)
     {
 	text.addKeyListener(new class(text, cal) KeyListener
@@ -1064,7 +1184,7 @@ public class GUI
 
 		if(itemData.get("id") == CLEAR_ID)
 		{
-		    // set line to remove style down from
+		    // Set line to remove style down from.
 		    int lineAtOffset = this.txtPad.getLineAtOffset(this.txtPad.getCaretOffset) + 1;
 		    if((this.txtPad.getLineCount - 1) < lineAtOffset)
 			lineAtOffset = this.txtPad.getLineCount - 1;
@@ -1075,7 +1195,7 @@ public class GUI
 		    if(-1 == titlePos)
 			titlePos = 0;
 		    
-		    // remove category names - paragraph title
+		    // Remove category names - paragraph title.
 		    int length = this.txtPad.getLine(titlePos).length;
 		    this.txtPad.replaceTextRange(this.txtPad.getOffsetAtLine(titlePos), length + 1, "");
 		    Storage.setCategoryRanges(null, styleRangesToCategoryRanges(this.txtPad.getStyleRanges));
@@ -1095,13 +1215,13 @@ public class GUI
 		int length = selection.y - selection.x;
 		int end = selection.y;
 
-		// nothing selected and no style on this line
+		// Nothing selected and no style on this line.
 		int lineBegin = this.txtPad.getOffsetAtLine(this.txtPad.getLineAtOffset(start));
 		if(this.txtPad.getCharCount <= lineBegin) return;
 		StyleRange style = this.txtPad.getStyleRangeAtOffset(lineBegin);
 		if((length <= 0) && !style) return;
 
-		// style underneath cursor, but no selection.
+		// Style underneath cursor, but no selection.
 		// Find line in bold and add selected category name.
 		char[] catName = Storage.getCategoryName(Integer.toInt(itemData.get("id")));
 		if(length <= 0)
@@ -1113,22 +1233,22 @@ public class GUI
 		    return;
 		}
 
-		// does selection overlap with existing styles?
+		// Does selection overlap with existing styles?
  		if(0 < this.txtPad.getRanges(start, length).length) return;
 
-		// background for category title(s)
+		// Background for category title(s).
 		StyleRange styleTitle = new StyleRange(start,
 						       catName.length,
 						       null,
 						       getColor(getConfig(USER_CATEGORY_BACKGROUND_COLOR_SETTING_NAME)),
 						       DWT.BOLD);
-		// background for paragraph
+		// Background for paragraph.
 		StyleRange styleBody = new StyleRange(start + catName.length,
 						      length + 1,
 						      null,
 						      getColor(getConfig(USER_CATEGORY_BACKGROUND_COLOR_SETTING_NAME)));
 
-		// add empty line at the end if replacement is longer than original text
+		// Add empty line at the end if replacement is longer than original text.
 		if(this.txtPad.getCharCount < start + length + 1)
 		    this.txtPad.append("\n");
 		
@@ -1137,6 +1257,126 @@ public class GUI
 		this.txtPad.setStyleRange(styleTitle);
 		this.txtPad.setStyleRange(styleBody);
 		Storage.setCategoryRanges(null, styleRangesToCategoryRanges(this.txtPad.getStyleRanges));
+	    }
+	});
+    }
+
+
+    private void drawSearchResultsWindow(char[] content,
+					 StyledText textPad,
+					 DateTime calendar)
+    {
+	Composite parent = textPad.getParent;
+
+	// Remove previous search results.
+	hideSearchChildren(parent);
+
+	GridData gdSearch = new GridData(DWT.FILL, DWT.FILL, true, true);
+	uint widgetHeight = parent.getSize.y / 2;
+	gdSearch.heightHint = widgetHeight;
+ 	ScrolledComposite sc = new ScrolledComposite(parent, DWT.V_SCROLL | DWT.H_SCROLL);
+	sc.setLayoutData(gdSearch);
+	Composite c = new Composite(sc, DWT.BORDER);
+	c.setLayout(new GridLayout(1, false));
+	GridData gdLink = new GridData(DWT.FILL, DWT.FILL, true, true);
+	Link link = new Link(c, DWT.NONE);
+
+	// Append CLOSE link at the top.
+	content = "<a>CLOSE</a>\n\n" ~ content;
+
+	// Adjust container height.
+	uint contentHeight = SEARCH_RESULTS_LINE_HEIGHT * Txt.count(content, "\n");
+	gdLink.heightHint = contentHeight;
+
+	// Append CLOSE link at the bottom when content exceeds widget boundaries.
+	if(widgetHeight < contentHeight)
+	    content ~= "\n\n<a>CLOSE</a>";
+
+	link.setLayoutData(gdLink);
+	link.setText(toUtf8(content));
+
+	sc.setContent(c);
+	sc.setMinSize(c.computeSize(DWT.DEFAULT, DWT.DEFAULT));
+	sc.setExpandHorizontal(true);
+	sc.setExpandVertical(true);
+
+	// Adjust height of text pad above.
+	(cast(GridData)textPad.getLayoutData).heightHint = parent.getSize.y / 2;
+	parent.layout(true);
+
+	link.addListener(DWT.Selection, new class(parent, sc, link, calendar) Listener
+        {
+	    Composite _parent;
+	    ScrolledComposite scrolled;
+	    Link lnk;
+	    DateTime cal;
+	    this(Composite c, ScrolledComposite s, Link l, DateTime dt)
+	    {
+		this._parent = parent;
+		this.scrolled = sc;
+		this.lnk = link;
+		this.cal = calendar;
+	    }
+	    public void handleEvent(Event event)
+	    {
+		// Close "Search results" window.
+		if("CLOSE" == event.text)
+		{
+		    this.scrolled.dispose;
+		    this._parent.layout;
+		}
+
+		// Load requested page.
+		if("PAGE" == event.text[0..4])
+		{
+		    char[] content = Storage.getSearchResultPage(Integer.toInt(event.text[4..$]));
+		    content = "<a>CLOSE</a>\n\n" ~ content;
+		    content ~= "\n\n<a>CLOSE</a>";
+
+		    // Adjust container height.
+		    (cast(GridData)this.lnk.getLayoutData).heightHint = SEARCH_RESULTS_LINE_HEIGHT * Txt.count(content, "\n");
+		    this.scrolled.setMinSize((cast(Composite)this.scrolled.getChildren[0]).computeSize(DWT.DEFAULT, DWT.DEFAULT));
+		    this.lnk.setText(content);
+		}
+
+		StyledText txtPad;
+		foreach(control; this._parent.getChildren)
+		{
+		    if("StyledText" == control.getName)
+			txtPad = cast(StyledText)control;
+		}
+
+		// Load text associated with clicked link
+		// into window above, scroll to the first appearance
+		// of given keywords and highlight the keywords.
+		if("JUMP" == event.text[0..4])
+		{
+		    char[] dayName = event.text[4..12];
+		    int year = Integer.toInt(dayName[0..4]);
+		    int month = Integer.toInt(dayName[4..6]);
+		    int day = Integer.toInt(dayName[6..8]);
+
+		    saveText(txtPad);
+
+		    if(getTodayFileName == dateToFileName(year, month, day))
+			txtPad.setEditable(true);
+		    else
+			txtPad.setEditable(false);
+
+		    this.cal.setYear(year);
+		    this.cal.setMonth(month - 1);
+		    this.cal.setDay(day);
+		    markCalendarDays(this.cal);
+
+		    txtPad.setText(Storage.getText(this.cal));
+		    txtPad.setData(new Data("noteid", "-1"));
+		    txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges(this.cal)));
+
+		    // Highlight matching keywords and scroll to view.
+  		    int start = Integer.toInt(Txt.split(event.text[12..$], "-")[0]);
+  		    int end = start + Txt.split(event.text[12..$], "-")[1].length;
+		    txtPad.setSelection(start, end);
+		}
 	    }
 	});
     }
@@ -1662,243 +1902,12 @@ public class GUI
     }
 
 
-    private void drawSearchResultsWindow(char[] content,
-					 StyledText textPad,
-					 DateTime calendar)
-    {
-	Composite parent = textPad.getParent;
-
-	// Remove previous search results.
-	hideSearchChildren(parent);
-
-	GridData gdSearch = new GridData(DWT.FILL, DWT.FILL, true, true);
-	uint widgetHeight = parent.getSize.y / 2;
-	gdSearch.heightHint = widgetHeight;
- 	ScrolledComposite sc = new ScrolledComposite(parent, DWT.V_SCROLL | DWT.H_SCROLL);
-	sc.setLayoutData(gdSearch);
-	Composite c = new Composite(sc, DWT.BORDER);
-	c.setLayout(new GridLayout(1, false));
-	GridData gdLink = new GridData(DWT.FILL, DWT.FILL, true, true);
-	Link link = new Link(c, DWT.NONE);
-
-	// Append CLOSE link at the top.
-	content = "<a>CLOSE</a>\n\n" ~ content;
-
-	// Adjust container height.
-	uint contentHeight = SEARCH_RESULTS_LINE_HEIGHT * Txt.count(content, "\n");
-	gdLink.heightHint = contentHeight;
-
-	// Append CLOSE link at the bottom when content exceeds widget boundaries.
-	if(widgetHeight < contentHeight)
-	    content ~= "\n\n<a>CLOSE</a>";
-
-	link.setLayoutData(gdLink);
-	link.setText(toUtf8(content));
-
-	sc.setContent(c);
-	sc.setMinSize(c.computeSize(DWT.DEFAULT, DWT.DEFAULT));
-	sc.setExpandHorizontal(true);
-	sc.setExpandVertical(true);
-
-	// Adjust height of text pad above.
-	(cast(GridData)textPad.getLayoutData).heightHint = parent.getSize.y / 2;
-	parent.layout(true);
-
-	link.addListener(DWT.Selection, new class(parent, sc, link, calendar) Listener
-        {
-	    Composite _parent;
-	    ScrolledComposite scrolled;
-	    Link lnk;
-	    DateTime cal;
-	    this(Composite c, ScrolledComposite s, Link l, DateTime dt)
-	    {
-		this._parent = parent;
-		this.scrolled = sc;
-		this.lnk = link;
-		this.cal = calendar;
-	    }
-	    public void handleEvent(Event event)
-	    {
-		// Close "Search results" window.
-		if("CLOSE" == event.text)
-		{
-		    this.scrolled.dispose;
-		    this._parent.layout;
-		}
-
-		// Load requested page.
-		if("PAGE" == event.text[0..4])
-		{
-		    char[] content = Storage.getSearchResultPage(Integer.toInt(event.text[4..$]));
-		    content = "<a>CLOSE</a>\n\n" ~ content;
-		    content ~= "\n\n<a>CLOSE</a>";
-
-		    // Adjust container height.
-		    (cast(GridData)this.lnk.getLayoutData).heightHint = SEARCH_RESULTS_LINE_HEIGHT * Txt.count(content, "\n");
-		    this.scrolled.setMinSize((cast(Composite)this.scrolled.getChildren[0]).computeSize(DWT.DEFAULT, DWT.DEFAULT));
-		    this.lnk.setText(content);
-		}
-
-		StyledText txtPad;
-		foreach(control; this._parent.getChildren)
-		{
-		    if("StyledText" == control.getName)
-			txtPad = cast(StyledText)control;
-		}
-
-		// Load text associated with clicked link
-		// into window above, scroll to the first appearance
-		// of given keywords and highlight the keywords.
-		if("JUMP" == event.text[0..4])
-		{
-		    char[] dayName = event.text[4..12];
-		    int year = Integer.toInt(dayName[0..4]);
-		    int month = Integer.toInt(dayName[4..6]);
-		    int day = Integer.toInt(dayName[6..8]);
-
-		    saveText(txtPad);
-
-		    if(getTodayFileName == dateToFileName(year, month, day))
-			txtPad.setEditable(true);
-		    else
-			txtPad.setEditable(false);
-
-		    this.cal.setYear(year);
-		    this.cal.setMonth(month - 1);
-		    this.cal.setDay(day);
-		    markCalendarDays(this.cal);
-
-		    txtPad.setText(Storage.getText(this.cal));
-		    txtPad.setData(new Data("noteid", "-1"));
-		    txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges(this.cal)));
-
-		    // Highlight matching keywords and scroll to view.
-  		    int start = Integer.toInt(Txt.split(event.text[12..$], "-")[0]);
-  		    int end = start + Txt.split(event.text[12..$], "-")[1].length;
-		    txtPad.setSelection(start, end);
-		}
-	    }
-	});
-    }
-
-
     /*
-      Emerge small text input beneath text pad for
-      incremental search in currently displayed text.
-    */
-    private void drawIncrementalFindInput(StyledText textPad)
+      Draw chain list.
+     */
+    private void drawChainList(Composite composite)
     {
-	Composite parent = textPad.getParent;
-
-	// Remove previous search results.
-	hideSearchChildren(parent);
-
-	// Draw text input one line high.
-	GridData gdFind = new GridData(DWT.FILL, DWT.FILL, true, true);
-	Text find = new Text(parent, DWT.BORDER);
-	find.setLayoutData(gdFind);
-	find.setMenu(new Menu(find));
-	setFont(cast(Control)find, FONT_SIZE_3, DWT.NONE);
-	find.setFocus;
-	(cast(GridData)textPad.getLayoutData).heightHint = parent.getSize.y - INCREMENTAL_SEARCH_BOX_HEIGHT;
-	parent.layout;
-
-	// Mark first match in the above text when
-	// three or more characters are entered.
-	find.addModifyListener(new class(find, textPad) ModifyListener
-        {
-	    Text fnd;
-	    StyledText txtPad;
-	    this(Text t, StyledText st)
-	    {
-		this.fnd = find;
-		this.txtPad = textPad;
-	    }
-	    public void modifyText(ModifyEvent event)
-	    {
-		this.txtPad.clearSelection(false);
-		if(this.fnd.getText.length < 3) return;
-
-		char[] text = this.txtPad.getText;
-		char[] keywords = this.fnd.getText;
-		int location = 0;
-		int[] locations;
-		char[] strLocations;
-		do
-		{
-		    location = Txt.locatePattern(Unicode.toLower(text),
-						 Unicode.toLower(keywords),
-						 location);
-		    // Match found, temporarily store it.
-		    if((0 == location) || (location < text.length))
-		    {
-			locations ~= location;
-			strLocations ~= Integer.toString(location) ~ " ";
-		    }
-
-		    location += keywords.length;
-		}while(location < text.length);
-
-		this.fnd.setData(new Data("find", Integer.toString(keywords.length) ~ " " ~ Txt.trim(strLocations)));
-		// Mark first find.
-		if(0 < locations.length)
-		    this.txtPad.setSelection(locations[0], locations[0] + keywords.length);
-	    }
-	});
-	
-	// Jump to next match, or previous one if SHIFT is held
-	// along with ENTER key.
-	find.addKeyListener(new class(find, textPad) KeyListener
-        {
-	    Text fnd;
-	    StyledText txtPad;
-	    char[] keywords;
-	    this(Text t, StyledText st)
-	    {
-		this.fnd = find;
-		this.txtPad = textPad;
-	    }
-	    public void keyPressed(KeyEvent event)
-	    {
-		// Mark next match.
-		if(KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode)
-		{
-		    char[] find = (cast(Data)this.fnd.getData).get("find");
-		    char[][] finds = Txt.split(find, " ");
-
-		    if(finds.length <= 2) return;
-		    
-		    int length = Integer.toInt(finds[0]);
-		    finds = finds[1..$];
-
-		    char[][] newFinds = shiftLeft(finds);
-
-		    // Mark previous match.
-		    if(((event.stateMask & DWT.SHIFT) == DWT.SHIFT) &&
-		       (KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode))
-			newFinds = shiftRight(finds);
-
-		    int start = Integer.toInt(newFinds[0]);
-
-		    char[] strFinds;
-		    foreach(f; newFinds)
-			strFinds ~= f ~ " ";
-
-		    this.fnd.setData(new Data("find", Integer.toString(length) ~ " " ~ Txt.trim(strFinds)));
-		    this.txtPad.setSelection(start, start + length);
-		}
-
-		if(KEY_ESC == event.keyCode)
-		{
-		    auto parent = this.fnd.getParent;
-		    this.fnd.dispose;
-		    parent.layout;
-		    this.txtPad.setFocus;
-		    this.txtPad.clearSelection(false);
-		}
-	    }
-	    public void keyReleased(KeyEvent event){}
-	});
+	Stdout("Drawing chain list").newline;
     }
 
 
@@ -1971,6 +1980,9 @@ public class GUI
 	// Note list.
 	drawNoteList(leftComposite, textPad);
 
+	// Chain list.
+	drawChainList(leftComposite);
+	
 	// Close button.
 	GridData gdButtonExit = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH, DWT.BOTTOM);
 	Button bExit = new Button(leftComposite, DWT.BORDER);
@@ -2003,12 +2015,13 @@ public class GUI
 	});
 
 	addCalendarListener(calendar, textPad);
+	addTodayButtonListener(bToday, calendar, textPad);
 	addTextPadExtendedModifyListener(textPad);
 	addTextPadKeyListener(textPad, calendar);
 	addTextPadMenuDetectListener(textPad);
 	addTextMenuListener(textPad);
 	addTextSearchKeyListener(rightComposite, textSearch, textPad, catEditList, calendar);
-	addTodayButtonListener(bToday, calendar, textPad);
+//	addChainSelectionListener(rightComposite);
 
 	setShellSize(shell);
 	shell.layout;

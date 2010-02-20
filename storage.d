@@ -719,15 +719,23 @@ private class Chain
     private char[] origName;
     private char[] desc;
     private char[] filename;
+    private int startDate;
     private int[] dates;
     private char[] origDigest;
     static private Chain[] chains;
 
-    this(char[] name, char[] desc = "", char[] filename = "", int[] dates = null)
+    this(char[] name,
+	 int startDate = -1,
+	 char[] desc = "",
+	 char[] filename = "",
+	 int[] dates = null)
     {
 	this.id = getFreeSlot(getIds);
 	this.name = sanitizeStr(name);
 	this.origName = this.name;
+	this.startDate = startDate;
+	if(-1 == this.startDate)
+	    this.startDate = Integer.toInt(dateStr);
 	this.desc = desc;
 	if(desc.length <= 0) this.desc = name;
 	if(filename.length <= 0) filename = randStr ~ CHAIN_FILE_EXTENSION;
@@ -869,6 +877,7 @@ private class Chain
 	    // After description follow dates, each in its line.
 	    char[] content = Integer.toString(chain.desc.length);
 	    content ~= "\n" ~ chain.name;
+	    content ~= "\n" ~ Integer.toString(chain.startDate);
 	    content ~= "\n" ~ chain.desc;
 	    char[] dates;
 	    foreach(date; chain.dates) dates ~= Integer.toString(date) ~ "\n";
@@ -901,16 +910,18 @@ private class Chain
 	    char[][] lines = Txt.splitLines(textOut);
 	    int descLen = Integer.toInt(lines[0]);
 	    char[] name = lines[1];
-	    char[] desc = lines[2][0..descLen];
+	    int startDate = Integer.toInt(lines[2]);
+	    char[] desc = lines[3][0..descLen];
 	    int[] dates;
-	    if((8 + descLen) == lines[2].length)
+	    if((8 + descLen) == lines[3].length)
 	    {
-		dates ~= Integer.toInt(lines[2][descLen..$]);
+		dates ~= Integer.toInt(lines[3][descLen..$]);
 		// Subsequent lines are dates.
-		for(int i = 3; i < lines.length - 1; i++)
+		for(int i = 4; i < lines.length - 1; i++)
 		    dates ~= Integer.toInt(lines[i]);
 	    }
 	    chains ~= new Chain(name,
+				startDate,
 				desc,
 				file.file,
 				dates);
@@ -966,15 +977,7 @@ public class Storage
     static public char[] getText(DateTime date = null)
     {
 	char[] text = "";
-
-	char[] dayName;
-	if(date is null)
-	    dayName = getTodayFileName;
-	else
-	    dayName = dateToFileName(date.getYear,
-				     date.getMonth + 1,
-				     date.getDay);
-
+	char[] dayName = dateStr(date);
 	if(0 < Day.dayGetText(dayName).length)
 	    text = Day.dayGetText(dayName);
 
@@ -1078,15 +1081,7 @@ public class Storage
      */
     static public void setCategoryRanges(DateTime date, int[][] ranges)
     {
-	char[] dayName;
-	if(date is null)
-	    dayName = getTodayFileName;
-	else
-	    dayName = dateToFileName(date.getYear,
-				     date.getMonth + 1,
-				     date.getDay);
-
-	Day.setCategoryRanges(dayName, ranges);
+	Day.setCategoryRanges(dateStr(date), ranges);
     }
 
     /*
@@ -1094,15 +1089,7 @@ public class Storage
      */
     static public int[][] getCategoryRanges(DateTime date = null)
     {
-	char[] dayName;
-	if(date is null)
-	    dayName = getTodayFileName;
-	else
-	    dayName = dateToFileName(date.getYear,
-				     date.getMonth + 1,
-				     date.getDay);
-
-	return Day.getCategoryRanges(dayName);
+	return Day.getCategoryRanges(dateStr(date));
     }
 
     static public void loadUserData()
@@ -1113,7 +1100,7 @@ public class Storage
 	Category.loadCategories;
 	loadCategoryRanges;
 	Note.loadNotes;
-	Chain.loadChains;
+//	Chain.loadChains;
     }
 
     static public char[] search(char[] keywords, int[] categories)
