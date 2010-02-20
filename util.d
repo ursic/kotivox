@@ -26,7 +26,7 @@ import Txt = tango.text.Util;
 import Clock = tango.time.Clock;
 import tango.stdc.stringz;
 import tango.stdc.time;
-import Unicode = tango.text.Unicode;
+import Utf = tango.text.convert.Utf;
 import tango.core.Array;
 import tango.math.random.Kiss;
 import tango.io.digest.Sha512;
@@ -138,7 +138,7 @@ char[][char[]] parseLines(in char[] str)
  */
 char[][] shiftLeft(char[][] words)
 {
-    // shift locations by one
+    // Shift locations by one.
     char[][] newWords;
     for(int i = 0; i < words.length; i++)
     {
@@ -157,7 +157,7 @@ char[][] shiftLeft(char[][] words)
  */
 char[][] shiftRight(char[][] words)
 {
-    // shift locations by one
+    // Shift locations by one.
     char[][] newWords;
     for(int i = 0; i < words.length; i++)
     {
@@ -178,11 +178,11 @@ char[] toUtf8(char[] string)
     dchar[] result;
     char[] str;
 
-    result = Unicode.toString32(string, result);
+    result = Utf.toString32(string, result);
     foreach(dchar ch; result)
     {
 	char[] dst;
-	dst = Unicode.encode(dst, ch);
+	dst = Utf.encode(dst, ch);
 	str ~= dst;
     }
     return str;

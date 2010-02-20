@@ -24,6 +24,7 @@ module storage;
 import tango.io.FileScan;
 import tango.core.Array;
 import Txt = tango.text.Util;
+import Unicode = tango.text.Unicode;
 import Integer = tango.text.convert.Integer;
 
 import dwt.DWT;

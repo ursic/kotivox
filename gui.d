@@ -88,7 +88,6 @@ import storage;
 private class Data
 {
     private char[][char[]] values;
-    private Object[char[]] objects;
 
     this(char[] key, char[] value)
     {
@@ -397,8 +396,9 @@ public class GUI
     }
 
 
-    private void addMenuOption(Menu menu, MenuOption option, StyledText txtPad)
+    private void addMenuOption(MenuOption option, StyledText txtPad)
     {
+	Menu menu = txtPad.getMenu;
 	removeMenuOption(menu, option);
 	MenuItem item;
 	if(-1 == option.index)
@@ -426,9 +426,8 @@ public class GUI
     {
 	static MenuOption timestamp = {id:TIMESTAMP_ID};
 	timestamp.text = "(" ~ util.timestamp ~ ")";
-	Menu menu = new Menu(txtPad.getShell);
-	addMenuOption(menu, timestamp, txtPad);
-	txtPad.setMenu(menu);
+	txtPad.setMenu(new Menu(txtPad));
+	addMenuOption(timestamp, txtPad);
     }
 
 
@@ -604,7 +603,7 @@ public class GUI
 	Text tUsernameL = new Text(formGroup, DWT.BORDER);
 	gd2.widthHint = this.gridDataWidthHint;
         tUsernameL.setLayoutData(gd2);
-	// prevent default menu
+	// Prevent default menu.
 	tUsernameL.setMenu(new Menu(tUsernameL));
 	tUsernameL.setData(new Data("name", "usernameL"));
 
@@ -614,7 +613,7 @@ public class GUI
 	Text tUsernameR = new Text(formGroup, DWT.BORDER);
 	gd2.widthHint = this.gridDataWidthHint;
         tUsernameR.setLayoutData(gd2);
-	// prevent default menu
+	// Prevent default menu.
 	tUsernameR.setMenu(new Menu(tUsernameL));
 	tUsernameR.setData(new Data("name", "usernameR"));
 
@@ -635,7 +634,7 @@ public class GUI
 	Text tPasswordL = new Text(formGroup, DWT.BORDER | DWT.PASSWORD);
 	gd4.widthHint = this.gridDataWidthHint;
         tPasswordL.setLayoutData(gd4);
-	// prevent default menu
+	// Prevent default menu.
 	tPasswordL.setMenu(new Menu(tPasswordL));
 	tPasswordL.setData(new Data("name", "passwordL"));
 
@@ -645,7 +644,7 @@ public class GUI
 	Text tPasswordR = new Text(formGroup, DWT.BORDER | DWT.PASSWORD);
 	gd4.widthHint = this.gridDataWidthHint;
         tPasswordR.setLayoutData(gd4);
-	// prevent default menu
+	// Prevent default menu.
 	tPasswordR.setMenu(new Menu(tPasswordR));
 	tPasswordR.setData(new Data("name", "passwordR"));
 
@@ -668,7 +667,7 @@ public class GUI
 	Text tPasswordRR = new Text(formGroup, DWT.BORDER | DWT.PASSWORD);
 	gd6.heightHint = LOGIN_TEXT_INPUT_HEIGHT;
         tPasswordRR.setLayoutData(gd6);
-	// prevent default menu
+	// Prevent default menu.
 	tPasswordRR.setMenu(new Menu(tPasswordRR));
 	tPasswordRR.setData(new Data("name", "passwordRR"));
 
@@ -685,7 +684,7 @@ public class GUI
 	bRegister.setText(REGISTER_TEXT);
         bRegister.setLayoutData(gd8);
 
-	// set font for all form children
+	// Set font for all form children.
 	foreach(control; formGroup.getChildren)
 	    setFont(control, FONT_SIZE_2, DWT.NONE);
 
@@ -701,8 +700,8 @@ public class GUI
 	addButtonListener(bLogin, lMsg);
 	addButtonListener(bRegister, lMsg);
 
-	// set tab-order for login form
-	// first element cast hints type for the rest
+	// Set tab-order for login form.
+	// First element cast hints type for the rest.
 	formGroup.setTabList([cast(Control)tUsernameL,
 			      tPasswordL,
 			      bLogin,
@@ -729,7 +728,7 @@ public class GUI
     }
 
 
-    private void addCalendarListener(DateTime calendar, StyledText textPad, Menu menu)
+    private void addCalendarListener(DateTime calendar, StyledText textPad)
     {
 	calendar.addSelectionListener(new class(calendar) SelectionAdapter
         {
@@ -740,7 +739,7 @@ public class GUI
 	    {
 		this.cal = calendar;
 		this.txtPad = textPad;
-		this.textMenu = menu;
+		this.textMenu = this.txtPad.getMenu;
 	    }
 	    public void widgetSelected(SelectionEvent e)
 	    {
@@ -866,16 +865,16 @@ public class GUI
       Enable or disable text pad pop-up menu depending on current selection
       and style at caret offset
      */
-    private void addTextPadMenuDetectListener(StyledText text, Menu menu)
+    private void addTextPadMenuDetectListener(StyledText text)
     {
-	text.addMenuDetectListener(new class(text, menu) MenuDetectListener
+	text.addMenuDetectListener(new class(text) MenuDetectListener
 	{
 	    StyledText txtPad;
 	    Menu txtPadMenu;
-	    this(StyledText t, Menu m)
+	    this(StyledText t)
 	    {
 		this.txtPad = text;
-		this.txtPadMenu = menu;
+		this.txtPadMenu = this.txtPad.getMenu;
 	    }
 
 	    public void menuDetected(MenuDetectEvent event)
@@ -894,13 +893,13 @@ public class GUI
 		    return;
 		}
 
-		// caret is too far, nothing underneath anymore
+		// Caret is too far, nothing underneath anymore.
 		if(this.txtPad.getCharCount <= this.txtPad.getCaretOffset)
 		{
-		    // move caret one character back
+		    // Move caret one character back.
 		    if(0 < this.txtPad.getCaretOffset)
 		    {
-			// preserve selection
+			// Preserve selection.
 			Point selection = this.txtPad.getSelection;
 			this.txtPad.setCaretOffset(this.txtPad.getCaretOffset - 1);
 			this.txtPad.setSelection(selection);
@@ -930,21 +929,21 @@ public class GUI
 		    return;
 		}
 
-		// no selection but style underneath cursor - show menu
+		// No selection, but style underneath cursor - show menu.
 		if((length <= 0) && this.txtPad.getStyleRangeAtOffset(start))
 		{
 		    this.txtPad.setMenu(this.txtPadMenu);
 		    return;
 		}
 
-		// selection overlaps with existing styles - hide menu
+		// Selection overlaps with existing styles - hide menu.
  		if(0 < this.txtPad.getRanges(start, length).length)
 		{
 		    this.txtPad.setMenu(null);
 		    return;
 		}
 
-		// selected text is not associated with any category - show menu
+		// Selected text is not associated with any category - show menu.
 		if((0 < length) && !this.txtPad.getStyleRangeAtOffset(start))
 		{
 		    this.txtPad.setMenu(this.txtPadMenu);
@@ -958,18 +957,16 @@ public class GUI
     /*
       Store new category name and change it in textPad's context menu.
     */
-    private void addCategoryNameModifyListener(Text textInput, Menu menu, StyledText text)
+    private void addCategoryNameModifyListener(Text textInput, Menu menu)
     {
-	textInput.addModifyListener(new class(textInput, menu, text) ModifyListener
+	textInput.addModifyListener(new class(textInput, menu) ModifyListener
         {
 	    Text catText;
 	    Menu txtPadMenu;
-	    StyledText txtPad;
-	    this(Text t, Menu m, StyledText st)
+	    this(Text t, Menu m)
             {
 		this.catText = textInput;
 		this.txtPadMenu = menu;
-		this.txtPad = text;
 	    }
 
 	    public void modifyText(ModifyEvent event)
@@ -991,16 +988,17 @@ public class GUI
     }
 
 
-    private void addTextMenuListener(Menu menu, StyledText text)
+    private void addTextMenuListener(StyledText text)
     {
-	menu.addMenuListener(new class(menu, text) MenuAdapter
+	Menu menu = text.getMenu;
+	menu.addMenuListener(new class(text) MenuAdapter
         {
 	    Menu txtPadMenu;
 	    StyledText txtPad;
-	    this(Menu m, StyledText t)
+	    this(StyledText t)
 	    {
-		this.txtPadMenu = menu;
 		this.txtPad = text;
+		this.txtPadMenu = this.txtPad.getMenu;
 	    }
 
 	    public void menuShown(MenuEvent event)
@@ -1027,10 +1025,10 @@ public class GUI
 		StyleRange style = this.txtPad.getStyleRangeAtOffset(lineBegin);
 		if((length <= 0) && style)
 		{
-		    addMenuOption(this.txtPadMenu, separator1, this.txtPad);
-		    addMenuOption(this.txtPadMenu, timestamp, this.txtPad);
-		    addMenuOption(this.txtPadMenu, separator2, this.txtPad);
-		    addMenuOption(this.txtPadMenu, clear, this.txtPad);
+		    addMenuOption(separator1, this.txtPad);
+		    addMenuOption(timestamp, this.txtPad);
+		    addMenuOption(separator2, this.txtPad);
+		    addMenuOption(clear, this.txtPad);
 		}
 		// Remove separator and option to remove style from paragraph.
 		else
@@ -1178,7 +1176,7 @@ public class GUI
 		    saveText(this.txtPad);
 
 		    char[] searchResults;
-		    // get the first search result page
+		    // Get the first search result page.
 		    if(0 == (searchResults = Storage.search(this.txtSearch.getText,
 							    getSelectedCategories(this.catList))).length)
 			searchResults = Storage.getSearchResultPage;
@@ -1276,62 +1274,11 @@ public class GUI
     }
 
 
-    private void drawMainWindow(in Shell shell)
+    // Draw text input for global search.
+    private Text drawSearchInput(Composite composite, StyledText textPad)
     {
-	foreach(child; shell.getChildren)
-		child.dispose;
-
-	GridLayout layout = new GridLayout(2, false);
-        shell.setLayout(layout);
-
-	// left column
-	GridData leftCol = new GridData(DWT.FILL, DWT.FILL, false, true);
-	GridLayout leftLayout = new GridLayout(1, false);
-
-	// left group
-	Composite leftComposite = new Composite(shell, DWT.NONE);
-	leftComposite.setLayout(leftLayout);
-	leftComposite.setLayoutData(leftCol);
-
-	// right column
-	GridData rightCol = new GridData(DWT.FILL, DWT.FILL, true, true);
-	GridLayout rightLayout = new GridLayout(1, false);
-
-	// right group
-	Composite rightComposite = new Composite(shell, DWT.NONE);
-	rightComposite.setLayout(rightLayout);
-	rightComposite.setLayoutData(rightCol);
-
-        GridData calendarData = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH, DWT.DEFAULT);
-	DateTime calendar = new DateTime(leftComposite, DWT.CALENDAR);
-        calendarData.verticalAlignment = DWT.TOP;
-	calendarData.heightHint = MAIN_WINDOW_CALENDAR_HEIGHT;
-        calendar.setLayoutData(calendarData);
-	markCalendarDays(calendar);
-
-	GridData gdButtonToday = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH, DWT.DEFAULT);
-	Button bToday = new Button(leftComposite, DWT.BORDER);
-        gdButtonToday.verticalAlignment = DWT.CENTER;
-	gdButtonToday.heightHint = MAIN_WINDOW_LEFT_COLUMN_BUTTON_HEIGHT;
-	setFont(cast(Control)bToday, FONT_SIZE_3, DWT.BOLD);
-	bToday.setText(TODAY_TEXT);
-        bToday.setLayoutData(gdButtonToday);
-
-	// Big text field on the right
-	GridData rightData = new GridData(DWT.FILL, DWT.FILL, true, true);
-	StyledText textPad = new StyledText(rightComposite,
-					    DWT.BORDER | DWT.MULTI | DWT.H_SCROLL | DWT.V_SCROLL);
-	textPad.setFocus;
-	setFont(cast(Control)textPad, FONT_SIZE_1, DWT.NONE);
-	textPad.setText(Storage.getText);
-	textPad.setData(new Data("noteid", "-1"));
-	textPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
- 	textPad.setLayoutData(rightData);
-	textPad.setKeyBinding(DWT.MOD1 + 'A', ST.SELECT_ALL);
-
-	// Search field
 	GridData gdSearch = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH - 8, DWT.DEFAULT);
-	Text textSearch = new Text(leftComposite, DWT.DEFAULT);
+	Text textSearch = new Text(composite, DWT.DEFAULT);
 	setFont(cast(Control)textSearch, FONT_SIZE_3, DWT.ITALIC);
 	textSearch.setText(SEARCH_BOX_TEXT);
 	textSearch.setForeground(new Color(Display.getCurrent, 191, 191, 191));
@@ -1363,34 +1310,14 @@ public class GUI
 	    public void focusLost(FocusEvent event){}
 	});
 
-	Composite catEditGroup = new Composite(leftComposite, DWT.NONE);
-	catEditGroup.setLayout(new GridLayout(2, false));
+	return textSearch;
+    }
 
-	GridData gdCat1 = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH - 58, DWT.DEFAULT);
-	Button catCheck = new Button(catEditGroup, DWT.CHECK);
-	catCheck.setLayoutData(gdCat1);
-	setFont(cast(Control)catCheck, FONT_SIZE_1, DWT.BOLD);
-	catCheck.setSelection(true);
-        catCheck.setText(CATEGORIES_TEXT);
-
-	GridData gdCat2 = new GridData(44, DWT.DEFAULT);
-	Button catAdd = new Button(catEditGroup, DWT.LEFT);
-	catAdd.setLayoutData(gdCat2);
-	setFont(cast(Control)catAdd, FONT_SIZE_2, DWT.BOLD);
-        catAdd.setText("+ —");
-	catAdd.setToolTipText(ADD_REMOVE_BUTTON_TOOLTIP);
-
-	Composite c = new Composite(leftComposite, DWT.NONE);
-	c.setLayout(new FillLayout(DWT.VERTICAL));
-	GridData gdc = new GridData(DWT.LEFT, DWT.TOP, true, true);
-	gdc.widthHint = MAIN_WINDOW_LEFT_COLUMN_WIDTH;
-	gdc.heightHint = CATEGORY_LIST_HEIGHT;
-	c.setLayoutData(gdc);
-	ScrolledComposite sc = new ScrolledComposite(c, DWT.V_SCROLL);
-	Composite catEditList = new Composite(sc, DWT.NONE);
-	catEditList.setLayout(new GridLayout(2, false));
-
-	// check or uncheck all categories
+    /*
+      Toggle checkboxes in category list.
+     */
+    private void addCategoryCheckListener(Button catCheck, Composite catEditList)
+    {
 	catCheck.addListener(DWT.Selection, new class(catCheck, catEditList) Listener
 	{
 	    Button _catCheck;
@@ -1414,67 +1341,71 @@ public class GUI
 		    }
 		}
 	    }
-	});
+	});	
+    }
 
-	int catCheckWidth = 24;
-	int catListWidth = MAIN_WINDOW_LEFT_COLUMN_WIDTH - 60;
-	Color catTextBack = getColor(CATEGORY_LIST_BACKGROUND_COLOR);
+    /*
+      Populate category list with category names.
+     */
+    private void fillCategoryList(Composite catEditList, StyledText textPad)
+    {
+	Menu textPadMenu = textPad.getMenu;
 
-	// right-click / context menu for text area
-	Menu textPadMenu = new Menu(cast(Decorations)shell);
-	addTextMenuListener(textPadMenu, textPad);
-
-	// populate category list box with saved user categories
 	char[][] category;
 	while(null !is (category = Storage.getCategory))
 	{
 	    char[] id = category[0];
 	    char[] name = category[1];
 
-	    GridData gdCatCheck = new GridData(catCheckWidth, DWT.DEFAULT);
+	    GridData gdCatCheck = new GridData(CATEGORY_CHECKBOX_WIDTH, DWT.DEFAULT);
 	    Button catChk = new Button(catEditList, DWT.CHECK);
 	    catChk.setData(new Data("id", id));
 	    catChk.setLayoutData(gdCatCheck);
 	    catChk.setSelection(true);
 
-	    GridData gdCatName = new GridData(catListWidth, DWT.DEFAULT);
+	    GridData gdCatName = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
 	    Text catText = new Text(catEditList, DWT.NONE);
 	    setFont(cast(Control)catText, FONT_SIZE_1, DWT.NONE);
 	    catText.setLayoutData(gdCatName);
 	    catText.setData(new Data("id", id));
 	    catText.setText(name);
-	    catText.setBackground(catTextBack);
-	    // prevent default menu
+	    catText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+	    // Prevent default menu.
 	    catText.setMenu(new Menu(catText));
-	    addCategoryNameModifyListener(catText, textPadMenu, textPad);
+	    addCategoryNameModifyListener(catText, textPadMenu);
 
-	    // add category to textPad's context menu
+	    // Add category to textPad's context menu.
 	    static MenuOption catItem;
 	    catItem.id = id;
 	    catItem.text = name;
-	    addMenuOption(textPadMenu, catItem, textPad);
+	    addMenuOption(catItem, textPad);
  	}
 
-	textPad.setMenu(textPadMenu);
-
+	ScrolledComposite sc = cast(ScrolledComposite)catEditList.getParent;
         sc.setContent(catEditList);
 	sc.setMinSize(catEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
         sc.setExpandHorizontal(true);
         sc.setExpandVertical(true);
+    }
 
-	// Add to or remove category from category list.
-	catAdd.addListener(DWT.Selection, new class(catEditList, sc, textPadMenu, textPad) Listener
+
+    /*
+      Add to or remove category from category list.
+     */
+    private void addCategoryToggleListener(Button catAdd, Composite catEditList, StyledText textPad)
+    {
+	catAdd.addListener(DWT.Selection, new class(catEditList, textPad) Listener
 	{
 	    Composite _catEditList;
 	    ScrolledComposite _sc;
 	    Menu txtPadMenu;
 	    StyledText txtPad;
-	    this(Composite c, ScrolledComposite _s, Menu m, StyledText t)
+	    this(Composite c, StyledText t)
 	    {
 		this._catEditList = catEditList;
-		this._sc = sc;
-		this.txtPadMenu = textPadMenu;
+		this._sc = cast(ScrolledComposite)catEditList.getParent;
 		this.txtPad = textPad;
+		this.txtPadMenu = this.txtPad.getMenu;
 	    }
 
 	    public void handleEvent(Event event)
@@ -1516,35 +1447,32 @@ public class GUI
 		// Add new category and checkbox if none have been disposed.
 		if(!disposed)
 		{
-		    int catCheckWidth = 24;
-		    int catListWidth = MAIN_WINDOW_LEFT_COLUMN_WIDTH - 60;
-
-		    // id of new category
+		    // ID of new category.
 		    char[] id = Integer.toString(Storage.addCategory(NEW_CATEGORY_TEXT));
 
-		    GridData gdCheck = new GridData(catCheckWidth, DWT.DEFAULT);
+		    GridData gdCheck = new GridData(CATEGORY_CHECKBOX_WIDTH, DWT.DEFAULT);
 		    Button catCheck = new Button(this._catEditList, DWT.CHECK);
 		    catCheck.setData(new Data("id", id));
 		    catCheck.setLayoutData(gdCheck);
 		    catCheck.setSelection(true);
 
-		    GridData gdText = new GridData(catListWidth, DWT.DEFAULT);
+		    GridData gdText = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
 		    Text catText = new Text(this._catEditList, DWT.NONE);
 		    setFont(cast(Control)catText, FONT_SIZE_1, DWT.NONE);
 		    catText.setData(new Data("id", id));
 		    catText.setText(NEW_CATEGORY_TEXT);
 		    catText.setLayoutData(gdText);
 		    catText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
-		    // prevent default menu
+		    // Prevent default menu.
 		    catText.setMenu(new Menu(catText));
-		    addCategoryNameModifyListener(catText, this.txtPadMenu, this.txtPad);
+		    addCategoryNameModifyListener(catText, this.txtPadMenu);
 
-		    // add category to textPad's context menu
-		    // 0 puts menu item on top of menu
+		    // Add category to textPad's context menu.
+		    // 0 puts menu item on top of menu.
 		    static MenuOption catItem = {text:NEW_CATEGORY_TEXT,
 						 index:0};
 		    catItem.id = id;
-		    addMenuOption(this.txtPadMenu, catItem, this.txtPad);
+		    addMenuOption(catItem, this.txtPad);
 		}
 
 		// Redraw parent container.
@@ -1552,68 +1480,98 @@ public class GUI
 		this._sc.setMinSize(this._catEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
 	    }
 	});
+    }
 
-	Composite notesEditGroup = new Composite(leftComposite, DWT.NONE);
-	notesEditGroup.setLayout(new GridLayout(2, false));
 
-	GridData gdNote1 = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH - 58, DWT.DEFAULT);
-	Label lNotes = new Label(notesEditGroup, DWT.NONE);
-	lNotes.setLayoutData(gdNote1);
-	setFont(cast(Control)lNotes, FONT_SIZE_1, DWT.BOLD);
-        lNotes.setText(NOTES_TEXT);
+    /*
+      Draw category list.
+    */
+    private Composite drawCategoryList(Composite composite, StyledText textPad)
+    {
+	Composite catEditGroup = new Composite(composite, DWT.NONE);
+	catEditGroup.setLayout(new GridLayout(2, false));
 
-	GridData gdNote2 = new GridData(44, DWT.DEFAULT);
-	Button noteAdd = new Button(notesEditGroup, DWT.LEFT);
-	noteAdd.setLayoutData(gdNote2);
-	setFont(cast(Control)noteAdd, FONT_SIZE_2, DWT.BOLD);
-        noteAdd.setText("+ —");
-	noteAdd.setToolTipText(ADD_REMOVE_BUTTON_TOOLTIP);
+	GridData gdCat1 = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH - 58, DWT.DEFAULT);
+	Button catCheck = new Button(catEditGroup, DWT.CHECK);
+	catCheck.setLayoutData(gdCat1);
+	setFont(cast(Control)catCheck, FONT_SIZE_1, DWT.BOLD);
+	catCheck.setSelection(true);
+        catCheck.setText(CATEGORIES_TEXT);
 
-	Composite n = new Composite(leftComposite, DWT.NONE);
-	n.setLayout(new FillLayout(DWT.VERTICAL));
-	GridData gdn = new GridData(DWT.LEFT, DWT.TOP, true, true);
-	gdn.widthHint = MAIN_WINDOW_LEFT_COLUMN_WIDTH;
-	gdn.heightHint = CATEGORY_LIST_HEIGHT;
-	n.setLayoutData(gdn);
+	GridData gdCat2 = new GridData(44, DWT.DEFAULT);
+	Button catAdd = new Button(catEditGroup, DWT.LEFT);
+	catAdd.setLayoutData(gdCat2);
+	setFont(cast(Control)catAdd, FONT_SIZE_2, DWT.BOLD);
+        catAdd.setText("+ —");
+	catAdd.setToolTipText(ADD_REMOVE_BUTTON_TOOLTIP);
 
-	ScrolledComposite scn = new ScrolledComposite(n, DWT.V_SCROLL);
-	Composite noteEditList = new Composite(scn, DWT.NONE);
-	noteEditList.setLayout(new GridLayout(1, false));
+	Composite c = new Composite(composite, DWT.NONE);
+	c.setLayout(new FillLayout(DWT.VERTICAL));
+	GridData gdc = new GridData(DWT.LEFT, DWT.TOP, true, true);
+	gdc.widthHint = MAIN_WINDOW_LEFT_COLUMN_WIDTH;
+	gdc.heightHint = CATEGORY_LIST_HEIGHT;
+	c.setLayoutData(gdc);
+	ScrolledComposite sc = new ScrolledComposite(c, DWT.V_SCROLL);
+	Composite catEditList = new Composite(sc, DWT.NONE);
+	catEditList.setLayout(new GridLayout(2, false));
 
-	int noteListWidth = MAIN_WINDOW_LEFT_COLUMN_WIDTH - 60;
-	Color noteTextBack = getColor(CATEGORY_LIST_BACKGROUND_COLOR);
+	Menu textPadMenu = textPad.getMenu;
 
-	// Populate note list box with saved user notes.
+	// Populate category list box with saved user categories.
+	fillCategoryList(catEditList, textPad);
+
+	// Check or uncheck all categories.
+	addCategoryCheckListener(catCheck, catEditList);
+
+	// Add to or remove category from category list.
+	addCategoryToggleListener(catAdd, catEditList, textPad);
+
+	return catEditList;
+    }
+
+
+    /*
+      Populate note list.
+     */
+    private void fillNoteList(Composite noteEditList, StyledText textPad)
+    {
 	foreach(id, name; Storage.getNotes)
 	{
-	    GridData gdNoteName = new GridData(noteListWidth, DWT.DEFAULT);
+	    GridData gdNoteName = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
 	    Text noteText = new Text(noteEditList, DWT.NONE);
 	    setFont(cast(Control)noteText, FONT_SIZE_1, DWT.NONE);
 	    noteText.setLayoutData(gdNoteName);
 	    noteText.setData(new Data("id", Integer.toString(id)));
 	    noteText.setText(name);
-	    noteText.setBackground(noteTextBack);
+	    noteText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
 	    // Prevent default menu.
 	    noteText.setMenu(new Menu(noteText));
 	    addNoteNameModifyListener(noteText);
 	    addNoteFocusListener(noteText, textPad);
 	}
 
+	ScrolledComposite scn = cast(ScrolledComposite)noteEditList.getParent;
         scn.setContent(noteEditList);
 	scn.setMinSize(noteEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
         scn.setExpandHorizontal(true);
-        scn.setExpandVertical(true);	
+        scn.setExpandVertical(true);
+    }
 
-	// Add to or remove note from note list.
-	noteAdd.addListener(DWT.Selection, new class(noteEditList, scn, textPad) Listener
+
+    /*
+      Add to or remove note from note list.
+     */
+    private void addNoteToggleListener(Button noteAdd, Composite noteEditList, StyledText textPad)
+    {
+	noteAdd.addListener(DWT.Selection, new class(noteEditList, textPad) Listener
 	{
 	    Composite _noteEditList;
 	    ScrolledComposite _scn;
 	    StyledText txtPad;
-	    this(Composite c, ScrolledComposite s, StyledText t)
+	    this(Composite c, StyledText t)
 	    {
 		this._noteEditList = noteEditList;
-		this._scn = scn;
+		this._scn = cast(ScrolledComposite)noteEditList.getParent;
 		this.txtPad = textPad;
 	    }
 
@@ -1639,12 +1597,10 @@ public class GUI
 		// Add new note if none have been disposed.
 		if(!disposed)
 		{
-		    int noteListWidth = MAIN_WINDOW_LEFT_COLUMN_WIDTH - 60;
-
 		    char[] id = Integer.toString(Storage.addNote);
 		    char[] name = NOTES_TEXT ~ " " ~ Integer.toString(Integer.toInt(id) + 1);
 
-		    GridData gdText = new GridData(noteListWidth, DWT.DEFAULT);
+		    GridData gdText = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
 		    Text noteText = new Text(this._noteEditList, DWT.NONE);
 		    setFont(cast(Control)noteText, FONT_SIZE_1, DWT.NONE);
 		    noteText.setData(new Data("id", id));
@@ -1663,46 +1619,46 @@ public class GUI
 		this._scn.setMinSize(this._noteEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
 	    }
 	});
+    }
 
-	GridData gdButtonExit = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH, DWT.BOTTOM);
-	Button bExit = new Button(leftComposite, DWT.BORDER);
-        gdButtonExit.verticalAlignment = DWT.CENTER;
-	gdButtonExit.heightHint = MAIN_WINDOW_LEFT_COLUMN_BUTTON_HEIGHT;
-	setFont(cast(Control)bExit, FONT_SIZE_3, DWT.BOLD);
-	bExit.setText("Save && Close");
-        bExit.setLayoutData(gdButtonExit);
 
-	bExit.addListener(DWT.Selection, new class(textPad, shell, bExit) Listener
-	{
-	    StyledText text;
-	    Shell shell;
-	    Button btnExit;
-	    this(StyledText text, Shell shell, Button button)
-	    {
-		this.text = textPad;
-		this.shell = shell;
-		this.btnExit = bExit;
-	    }
-	    public void handleEvent(Event event)
-	    {
-		if(event.widget is this.btnExit)
-		{
-		    saveText(this.text);
-		    Storage.saveFinal;
-		    this.shell.close;
-		}
-	    }
-	});
+    /*
+      Draw note list.
+    */
+    private void drawNoteList(Composite composite, StyledText textPad)
+    {
+	Composite notesEditGroup = new Composite(composite, DWT.NONE);
+	notesEditGroup.setLayout(new GridLayout(2, false));
 
-	addCalendarListener(calendar, textPad, textPadMenu);
-	addTextPadExtendedModifyListener(textPad);
-	addTextPadKeyListener(textPad, calendar);
-	addTextPadMenuDetectListener(textPad, textPadMenu);
-	addTextSearchKeyListener(rightComposite, textSearch, textPad, catEditList, calendar);
-	addTodayButtonListener(bToday, calendar, textPad);
+	GridData gdNote1 = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH - 58, DWT.DEFAULT);
+	Label lNotes = new Label(notesEditGroup, DWT.NONE);
+	lNotes.setLayoutData(gdNote1);
+	setFont(cast(Control)lNotes, FONT_SIZE_1, DWT.BOLD);
+        lNotes.setText(NOTES_TEXT);
 
-	setShellSize(shell);
-	shell.layout;
+	GridData gdNote2 = new GridData(44, DWT.DEFAULT);
+	Button noteAdd = new Button(notesEditGroup, DWT.LEFT);
+	noteAdd.setLayoutData(gdNote2);
+	setFont(cast(Control)noteAdd, FONT_SIZE_2, DWT.BOLD);
+        noteAdd.setText("+ —");
+	noteAdd.setToolTipText(ADD_REMOVE_BUTTON_TOOLTIP);
+
+	Composite n = new Composite(composite, DWT.NONE);
+	n.setLayout(new FillLayout(DWT.VERTICAL));
+	GridData gdn = new GridData(DWT.LEFT, DWT.TOP, true, true);
+	gdn.widthHint = MAIN_WINDOW_LEFT_COLUMN_WIDTH;
+	gdn.heightHint = CATEGORY_LIST_HEIGHT;
+	n.setLayoutData(gdn);
+
+	ScrolledComposite scn = new ScrolledComposite(n, DWT.V_SCROLL);
+	Composite noteEditList = new Composite(scn, DWT.NONE);
+	noteEditList.setLayout(new GridLayout(1, false));
+
+	// Populate note list box with saved user notes.
+	fillNoteList(noteEditList, textPad);
+
+	// Add to or remove note from note list.
+	addNoteToggleListener(noteAdd, noteEditList, textPad);
     }
 
 
@@ -1816,7 +1772,7 @@ public class GUI
 		    txtPad.setData(new Data("noteid", "-1"));
 		    txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges(this.cal)));
 
-		    // highlight matching keywords and scroll to view
+		    // Highlight matching keywords and scroll to view.
   		    int start = Integer.toInt(Txt.split(event.text[12..$], "-")[0]);
   		    int end = start + Txt.split(event.text[12..$], "-")[1].length;
 		    txtPad.setSelection(start, end);
@@ -1828,7 +1784,7 @@ public class GUI
 
     /*
       Emerge small text input beneath text pad for
-      incremental search in currently displayed text
+      incremental search in currently displayed text.
     */
     private void drawIncrementalFindInput(StyledText textPad)
     {
@@ -1837,6 +1793,7 @@ public class GUI
 	// Remove previous search results.
 	hideSearchChildren(parent);
 
+	// Draw text input one line high.
 	GridData gdFind = new GridData(DWT.FILL, DWT.FILL, true, true);
 	Text find = new Text(parent, DWT.BORDER);
 	find.setLayoutData(gdFind);
@@ -1845,61 +1802,9 @@ public class GUI
 	find.setFocus;
 	(cast(GridData)textPad.getLayoutData).heightHint = parent.getSize.y - INCREMENTAL_SEARCH_BOX_HEIGHT;
 	parent.layout;
-	
-	find.addKeyListener(new class(find, textPad) KeyListener
-        {
-	    Text fnd;
-	    StyledText txtPad;
-	    char[] keywords;
-	    this(Text t, StyledText st)
-	    {
-		this.fnd = find;
-		this.txtPad = textPad;
-	    }
-	    public void keyPressed(KeyEvent event)
-	    {
-		// mark next match
-		if(KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode)
-		{
-		    char[] find = (cast(Data)this.fnd.getData).get("find");
-		    char[][] finds = Txt.split(find, " ");
 
-		    if(finds.length <= 2) return;
-		    
-		    int length = Integer.toInt(finds[0]);
-		    finds = finds[1..$];
-
-		    char[][] newFinds = shiftLeft(finds);
-
-		    // mark previous match
-		    if(((event.stateMask & DWT.SHIFT) == DWT.SHIFT) &&
-		       (KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode))
-			newFinds = shiftRight(finds);
-
-		    int start = Integer.toInt(newFinds[0]);
-
-		    char[] strFinds;
-		    foreach(f; newFinds)
-			strFinds ~= f ~ " ";
-
-		    this.fnd.setData(new Data("find", Integer.toString(length) ~ " " ~ Txt.trim(strFinds)));
-		    
-		    this.txtPad.setSelection(start, start + length);
-		}
-
-		if(KEY_ESC == event.keyCode)
-		{
-		    auto parent = this.fnd.getParent;
-		    this.fnd.dispose;
-		    parent.layout;
-		    this.txtPad.setFocus;
-		    this.txtPad.clearSelection(false);
-		}
-	    }
-	    public void keyReleased(KeyEvent event){}
-	});
-
-
+	// Mark first match in the above text when
+	// three or more characters are entered.
 	find.addModifyListener(new class(find, textPad) ModifyListener
         {
 	    Text fnd;
@@ -1924,7 +1829,7 @@ public class GUI
 		    location = Txt.locatePattern(Unicode.toLower(text),
 						 Unicode.toLower(keywords),
 						 location);
-		    // match found, temporarily store it
+		    // Match found, temporarily store it.
 		    if((0 == location) || (location < text.length))
 		    {
 			locations ~= location;
@@ -1935,11 +1840,178 @@ public class GUI
 		}while(location < text.length);
 
 		this.fnd.setData(new Data("find", Integer.toString(keywords.length) ~ " " ~ Txt.trim(strLocations)));
-		// mark first find
+		// Mark first find.
 		if(0 < locations.length)
 		    this.txtPad.setSelection(locations[0], locations[0] + keywords.length);
 	    }
 	});
+	
+	// Jump to next match, or previous one if SHIFT is held
+	// along with ENTER key.
+	find.addKeyListener(new class(find, textPad) KeyListener
+        {
+	    Text fnd;
+	    StyledText txtPad;
+	    char[] keywords;
+	    this(Text t, StyledText st)
+	    {
+		this.fnd = find;
+		this.txtPad = textPad;
+	    }
+	    public void keyPressed(KeyEvent event)
+	    {
+		// Mark next match.
+		if(KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode)
+		{
+		    char[] find = (cast(Data)this.fnd.getData).get("find");
+		    char[][] finds = Txt.split(find, " ");
+
+		    if(finds.length <= 2) return;
+		    
+		    int length = Integer.toInt(finds[0]);
+		    finds = finds[1..$];
+
+		    char[][] newFinds = shiftLeft(finds);
+
+		    // Mark previous match.
+		    if(((event.stateMask & DWT.SHIFT) == DWT.SHIFT) &&
+		       (KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode))
+			newFinds = shiftRight(finds);
+
+		    int start = Integer.toInt(newFinds[0]);
+
+		    char[] strFinds;
+		    foreach(f; newFinds)
+			strFinds ~= f ~ " ";
+
+		    this.fnd.setData(new Data("find", Integer.toString(length) ~ " " ~ Txt.trim(strFinds)));
+		    this.txtPad.setSelection(start, start + length);
+		}
+
+		if(KEY_ESC == event.keyCode)
+		{
+		    auto parent = this.fnd.getParent;
+		    this.fnd.dispose;
+		    parent.layout;
+		    this.txtPad.setFocus;
+		    this.txtPad.clearSelection(false);
+		}
+	    }
+	    public void keyReleased(KeyEvent event){}
+	});
+    }
+
+
+    private void drawMainWindow(in Shell shell)
+    {
+	// Remove elements from login/registration form.
+	foreach(child; shell.getChildren)
+		child.dispose;
+
+	GridLayout layout = new GridLayout(2, false);
+        shell.setLayout(layout);
+
+	// Left column.
+	GridData leftCol = new GridData(DWT.FILL, DWT.FILL, false, true);
+	GridLayout leftLayout = new GridLayout(1, false);
+
+	// Left group.
+	Composite leftComposite = new Composite(shell, DWT.NONE);
+	leftComposite.setLayout(leftLayout);
+	leftComposite.setLayoutData(leftCol);
+
+	// Right column.
+	GridData rightCol = new GridData(DWT.FILL, DWT.FILL, true, true);
+	GridLayout rightLayout = new GridLayout(1, false);
+
+	// Right group.
+	Composite rightComposite = new Composite(shell, DWT.NONE);
+	rightComposite.setLayout(rightLayout);
+	rightComposite.setLayoutData(rightCol);
+
+	// Calendar.
+        GridData calendarData = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH, DWT.DEFAULT);
+	DateTime calendar = new DateTime(leftComposite, DWT.CALENDAR);
+        calendarData.verticalAlignment = DWT.TOP;
+	calendarData.heightHint = MAIN_WINDOW_CALENDAR_HEIGHT;
+        calendar.setLayoutData(calendarData);
+	markCalendarDays(calendar);
+
+	// Today button.
+	GridData gdButtonToday = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH, DWT.DEFAULT);
+	Button bToday = new Button(leftComposite, DWT.BORDER);
+        gdButtonToday.verticalAlignment = DWT.CENTER;
+	gdButtonToday.heightHint = MAIN_WINDOW_LEFT_COLUMN_BUTTON_HEIGHT;
+	setFont(cast(Control)bToday, FONT_SIZE_3, DWT.BOLD);
+	bToday.setText(TODAY_TEXT);
+        bToday.setLayoutData(gdButtonToday);
+
+	// Big text field on the right.
+	GridData rightData = new GridData(DWT.FILL, DWT.FILL, true, true);
+	StyledText textPad = new StyledText(rightComposite,
+					    DWT.BORDER | DWT.MULTI | DWT.H_SCROLL | DWT.V_SCROLL);
+	textPad.setFocus;
+	setFont(cast(Control)textPad, FONT_SIZE_1, DWT.NONE);
+	textPad.setText(Storage.getText);
+	textPad.setData(new Data("noteid", "-1"));
+	textPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
+ 	textPad.setLayoutData(rightData);
+	textPad.setKeyBinding(DWT.MOD1 + 'A', ST.SELECT_ALL);
+
+	// Right-click / context menu for text area.
+	Menu textPadMenu = new Menu(textPad);
+	textPad.setMenu(textPadMenu);
+
+	// Search field.
+	Text textSearch = drawSearchInput(leftComposite, textPad);
+
+	// Category list.
+	Composite catEditList = drawCategoryList(leftComposite, textPad);
+
+	// Note list.
+	drawNoteList(leftComposite, textPad);
+
+	// Close button.
+	GridData gdButtonExit = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH, DWT.BOTTOM);
+	Button bExit = new Button(leftComposite, DWT.BORDER);
+        gdButtonExit.verticalAlignment = DWT.CENTER;
+	gdButtonExit.heightHint = MAIN_WINDOW_LEFT_COLUMN_BUTTON_HEIGHT;
+	setFont(cast(Control)bExit, FONT_SIZE_3, DWT.BOLD);
+	bExit.setText("Save && Close");
+        bExit.setLayoutData(gdButtonExit);
+
+	bExit.addListener(DWT.Selection, new class(textPad, shell, bExit) Listener
+	{
+	    StyledText text;
+	    Shell shell;
+	    Button btnExit;
+	    this(StyledText text, Shell shell, Button button)
+	    {
+		this.text = textPad;
+		this.shell = shell;
+		this.btnExit = bExit;
+	    }
+	    public void handleEvent(Event event)
+	    {
+		if(event.widget is this.btnExit)
+		{
+		    saveText(this.text);
+		    Storage.saveFinal;
+		    this.shell.close;
+		}
+	    }
+	});
+
+	addCalendarListener(calendar, textPad);
+	addTextPadExtendedModifyListener(textPad);
+	addTextPadKeyListener(textPad, calendar);
+	addTextPadMenuDetectListener(textPad);
+	addTextMenuListener(textPad);
+	addTextSearchKeyListener(rightComposite, textSearch, textPad, catEditList, calendar);
+	addTodayButtonListener(bToday, calendar, textPad);
+
+	setShellSize(shell);
+	shell.layout;
     }
 
 
@@ -1954,7 +2026,7 @@ public class GUI
 	{
 	    if(!this.display.readAndDispatch)
 	    {
-		// auto-save trap
+		// Auto-save trap.
 		this.display.sleep;
 	    }
 	}

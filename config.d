@@ -44,6 +44,8 @@ public const int WINDOW_WIDTH = 810;
 public const int MAIN_WINDOW_LEFT_COLUMN_WIDTH = 240;
 public const int MAIN_WINDOW_CALENDAR_HEIGHT = 200;
 public const int MAIN_WINDOW_LEFT_COLUMN_BUTTON_HEIGHT = 40;
+public const int CATEGORY_CHECKBOX_WIDTH = 24;
+public const int CATEGORY_NAME_WIDTH = 180;
 public const int CATEGORY_LIST_HEIGHT = 300;
 
 public const char[] USER_DAY_FILE_EXTENSION = ".kt";
