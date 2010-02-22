@@ -910,12 +910,12 @@ public class GUI
 		    int length = Integer.toInt(finds[0]);
 		    finds = finds[1..$];
 
-		    char[][] newFinds = shiftLeft(finds);
+		    char[][] newFinds = rotateLeft(finds);
 
 		    // Mark previous match.
 		    if(((event.stateMask & DWT.SHIFT) == DWT.SHIFT) &&
 		       (KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode))
-			newFinds = shiftRight(finds);
+			newFinds = rotateRight(finds);
 
 		    int start = Integer.toInt(newFinds[0]);
 
@@ -1731,18 +1731,18 @@ public class GUI
 	Composite catEditGroup = new Composite(composite, DWT.NONE);
 	catEditGroup.setLayout(new GridLayout(2, false));
 
-	GridData gdCat1 = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH - 58, DWT.DEFAULT);
+	GridData gdCat1 = new GridData(CATEGORY_LABEL_WIDTH, DWT.DEFAULT);
 	Button catCheck = new Button(catEditGroup, DWT.CHECK);
 	catCheck.setLayoutData(gdCat1);
 	setFont(cast(Control)catCheck, FONT_SIZE_1, DWT.BOLD);
 	catCheck.setSelection(true);
         catCheck.setText(CATEGORIES_TEXT);
 
-	GridData gdCat2 = new GridData(44, DWT.DEFAULT);
+	GridData gdCat2 = new GridData(ADD_REMOVE_BUTTON_WIDTH, ADD_REMOVE_BUTTON_HEIGHT);
 	Button catAdd = new Button(catEditGroup, DWT.LEFT);
 	catAdd.setLayoutData(gdCat2);
 	setFont(cast(Control)catAdd, FONT_SIZE_2, DWT.BOLD);
-        catAdd.setText("+ —");
+        catAdd.setText(ADD_REMOVE_TEXT);
 	catAdd.setToolTipText(ADD_REMOVE_BUTTON_TOOLTIP);
 
 	Composite c = new Composite(composite, DWT.NONE);
@@ -1870,17 +1870,17 @@ public class GUI
 	Composite notesEditGroup = new Composite(composite, DWT.NONE);
 	notesEditGroup.setLayout(new GridLayout(2, false));
 
-	GridData gdNote1 = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH - 58, DWT.DEFAULT);
+	GridData gdNote1 = new GridData(CATEGORY_LABEL_WIDTH, DWT.DEFAULT);
 	Label lNotes = new Label(notesEditGroup, DWT.NONE);
 	lNotes.setLayoutData(gdNote1);
 	setFont(cast(Control)lNotes, FONT_SIZE_1, DWT.BOLD);
         lNotes.setText(NOTES_TEXT);
 
-	GridData gdNote2 = new GridData(44, DWT.DEFAULT);
-	Button noteAdd = new Button(notesEditGroup, DWT.LEFT);
+	GridData gdNote2 = new GridData(ADD_REMOVE_BUTTON_WIDTH, ADD_REMOVE_BUTTON_HEIGHT);
+	Button noteAdd = new Button(notesEditGroup, DWT.CENTER);
 	noteAdd.setLayoutData(gdNote2);
 	setFont(cast(Control)noteAdd, FONT_SIZE_2, DWT.BOLD);
-        noteAdd.setText("+ —");
+        noteAdd.setText(ADD_REMOVE_TEXT);
 	noteAdd.setToolTipText(ADD_REMOVE_BUTTON_TOOLTIP);
 
 	Composite n = new Composite(composite, DWT.NONE);
@@ -1903,11 +1903,174 @@ public class GUI
 
 
     /*
+      Store chain name when modified.
+     */
+    private void addChainNameModifyListener(Text textInput)
+    {
+	textInput.addModifyListener(new class(textInput) ModifyListener
+        {
+	    Text chainText;
+	    this(Text t)
+            {
+		this.chainText = textInput;
+	    }
+
+	    public void modifyText(ModifyEvent event)
+            {
+		int id = Integer.toInt((cast(Data)this.chainText.getData).get("id"));
+		Storage.chainName(id, this.chainText.getText);
+	    }
+	});
+    }
+
+
+    /*
+      Draw chain user has focused on.
+     */
+    private void addChainFocusListener(Text chainText)
+    {
+	chainText.addFocusListener(new class(chainText) FocusListener
+        {
+	    Text chainTxt;
+	    this(Text t)
+	    {
+		this.chainTxt = chainText;
+	    }
+	    public void focusGained(FocusEvent event)
+	    {
+		Stdout("drawing chain", (cast(Data)this.chainTxt.getData).get("id")).newline;
+	    }
+	    public void focusLost(FocusEvent event){}
+	});
+    }
+
+
+    /*
+      Populate chain list.
+     */
+    private void fillChainList(Composite chainEditList)
+    {
+	foreach(id, name; Storage.getChains)
+	{
+	    GridData gdChainName = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
+	    Text chainText = new Text(chainEditList, DWT.NONE);
+	    setFont(cast(Control)chainText, FONT_SIZE_1, DWT.NONE);
+	    chainText.setLayoutData(gdChainName);
+	    chainText.setData(new Data("id", Integer.toString(id)));
+	    chainText.setText(name);
+	    chainText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+	    // Prevent default menu.
+	    chainText.setMenu(new Menu(chainText));
+ 	    addChainNameModifyListener(chainText);
+ 	    addChainFocusListener(chainText);
+	}
+
+	ScrolledComposite scc = cast(ScrolledComposite)chainEditList.getParent;
+        scc.setContent(chainEditList);
+	scc.setMinSize(chainEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
+        scc.setExpandHorizontal(true);
+        scc.setExpandVertical(true);
+    }
+
+
+    /*
+      Add to or remove note from note list.
+     */
+    private void addChainToggleListener(Button chainAdd, Composite chainEditList)
+    {
+	chainAdd.addListener(DWT.Selection, new class(chainEditList) Listener
+	{
+	    Composite _chainEditList;
+	    ScrolledComposite _scc;
+	    this(Composite c)
+	    {
+		this._chainEditList = chainEditList;
+		this._scc = cast(ScrolledComposite)chainEditList.getParent;
+	    }
+
+	    public void handleEvent(Event event)
+	    {
+		// Remove chains with empty names.
+		bool disposed = false;
+		foreach(Control c; this._chainEditList.getChildren)
+		{
+		    if("Text" == c.getName)
+		    {
+			Text t = cast(Text)c;
+ 			if(Txt.trim(t.getText).length <= 0)
+			{
+			    int id = Integer.toInt((cast(Data)t.getData).get("id"));
+			    Storage.removeChain(id);
+ 			    t.dispose;
+			    disposed = true;
+			}
+		    }
+		}
+
+		// Add new chain if none have been disposed.
+		if(!disposed)
+		{
+		    char[] id = Integer.toString(Storage.addChain);
+		    char[] name = CHAIN_TEXT ~ " " ~ Integer.toString(Integer.toInt(id) + 1);
+
+		    GridData gdText = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
+		    Text chainText = new Text(this._chainEditList, DWT.NONE);
+		    setFont(cast(Control)chainText, FONT_SIZE_1, DWT.NONE);
+		    chainText.setData(new Data("id", id));
+		    chainText.setText(name);
+		    chainText.setLayoutData(gdText);
+		    chainText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+		    // Prevent default menu.
+		    chainText.setMenu(new Menu(chainText));
+ 		    addChainNameModifyListener(chainText);
+ 		    addChainFocusListener(chainText);
+		}
+
+		// Redraw parent container.
+		this._scc.setContent(this._chainEditList);
+		this._scc.setMinSize(this._chainEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
+	    }
+	});
+    }
+
+
+    /*
       Draw chain list.
      */
     private void drawChainList(Composite composite)
     {
-	Stdout("Drawing chain list").newline;
+	Composite chainsEditGroup = new Composite(composite, DWT.NONE);
+	chainsEditGroup.setLayout(new GridLayout(2, false));
+
+	GridData gdChain1 = new GridData(CATEGORY_LABEL_WIDTH, DWT.DEFAULT);
+	Label lChains = new Label(chainsEditGroup, DWT.NONE);
+	lChains.setLayoutData(gdChain1);
+	setFont(cast(Control)lChains, FONT_SIZE_1, DWT.BOLD);
+        lChains.setText(CHAIN_TEXT);
+
+	GridData gdChain2 = new GridData(ADD_REMOVE_BUTTON_WIDTH, ADD_REMOVE_BUTTON_HEIGHT);
+	Button chainAdd = new Button(chainsEditGroup, DWT.LEFT);
+	chainAdd.setLayoutData(gdChain2);
+	setFont(cast(Control)chainAdd, FONT_SIZE_2, DWT.BOLD);
+        chainAdd.setText(ADD_REMOVE_TEXT);
+	chainAdd.setToolTipText(ADD_REMOVE_BUTTON_TOOLTIP);
+
+	Composite c = new Composite(composite, DWT.NONE);
+	c.setLayout(new FillLayout(DWT.VERTICAL));
+	GridData gdc = new GridData(DWT.LEFT, DWT.TOP, true, true);
+	gdc.widthHint = MAIN_WINDOW_LEFT_COLUMN_WIDTH;
+	gdc.heightHint = CATEGORY_LIST_HEIGHT;
+	c.setLayoutData(gdc);
+
+	ScrolledComposite scc = new ScrolledComposite(c, DWT.V_SCROLL);
+	Composite chainEditList = new Composite(scc, DWT.NONE);
+	chainEditList.setLayout(new GridLayout(1, false));
+
+	// Populate chain list box with saved user chains.
+	fillChainList(chainEditList);
+
+	// Add to or remove chain from chain list.
+	addChainToggleListener(chainAdd, chainEditList);
     }
 
 
@@ -1989,7 +2152,7 @@ public class GUI
         gdButtonExit.verticalAlignment = DWT.CENTER;
 	gdButtonExit.heightHint = MAIN_WINDOW_LEFT_COLUMN_BUTTON_HEIGHT;
 	setFont(cast(Control)bExit, FONT_SIZE_3, DWT.BOLD);
-	bExit.setText("Save && Close");
+	bExit.setText(SAVE_CLOSE_TEXT);
         bExit.setLayoutData(gdButtonExit);
 
 	bExit.addListener(DWT.Selection, new class(textPad, shell, bExit) Listener

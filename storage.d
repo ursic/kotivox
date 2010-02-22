@@ -640,13 +640,14 @@ private class Note
 	    noteFiles ~= noteFilePath;
 
 	    // Skip note with unchanged content.
-	    if((digest(note.content) == note.origDigest) && (note.origName == note.name)) continue;
+	    if((note.origName == note.name) && (digest(note.content) == note.origDigest)) continue;
 
 	    // Write name of the note in first line.
 	    char[] content = note.name ~ "\n" ~ note.content;
 	    k_encrypt_from_string(content,
 				  noteFilePath,
 				  Auth.cipherKey);
+	    note.origName = note.name;
 	    note.origDigest = digest(note.content);
 	}
 
@@ -768,10 +769,10 @@ private class Chain
 	chains = new_chains;
     }
 
-    static private int[] getChains()
+    static private char[][int] getChains()
     {
-	int[] chainlist;
-	foreach(chain; chains) chainlist ~= chain.id;
+	char[][int] chainlist;
+	foreach(chain; chains) chainlist[chain.id] ~= chain.name;
 	return chainlist;
     }
 
@@ -867,8 +868,8 @@ private class Chain
 	    chainFiles ~= chainFilePath;
 
 	    // Skip chain with unchanged content.
-	    if((digest(serialize(chain.dates.sort)) == chain.origDigest) &&
-	       (chain.origName != chain.name))
+	    if((chain.origName == chain.name) &&
+	       (digest(serialize(chain.dates.sort)) == chain.origDigest))
 		continue;
 
 	    // Write description length in first line.
@@ -885,6 +886,7 @@ private class Chain
 	    k_encrypt_from_string(content,
 				  chainFilePath,
 				  Auth.cipherKey);
+	    chain.origName = chain.name;
 	    chain.origDigest = digest(serialize(chain.dates.sort));
 	}
 
@@ -1100,7 +1102,7 @@ public class Storage
 	Category.loadCategories;
 	loadCategoryRanges;
 	Note.loadNotes;
-//	Chain.loadChains;
+	Chain.loadChains;
     }
 
     static public char[] search(char[] keywords, int[] categories)
@@ -1203,7 +1205,7 @@ public class Storage
 	Chain.remove(id);
     }
 
-    static public int[] getChains()
+    static public char[][int] getChains()
     {
 	return Chain.getChains;
     }

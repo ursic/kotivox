@@ -147,12 +147,11 @@ char[][char[]] parseLines(in char[] str)
 
 
 /*
-  Shift locations of strings by one to the left
-  Return resulting array of strings
+  Rotate locations of strings by one to the left.
+  Return resulting array of strings.
  */
-char[][] shiftLeft(char[][] words)
+char[][] rotateLeft(char[][] words)
 {
-    // Shift locations by one.
     char[][] newWords;
     for(int i = 0; i < words.length; i++)
     {
@@ -166,12 +165,12 @@ char[][] shiftLeft(char[][] words)
 
 
 /*
-  Shift locations of strings by one to the right
-  Return resulting array of strings
+  Rotate locations of strings by one to the right.
+  Return resulting array of strings.
  */
-char[][] shiftRight(char[][] words)
+char[][] rotateRight(char[][] words)
 {
-    // Shift locations by one.
+    // Rotate locations by one.
     char[][] newWords;
     for(int i = 0; i < words.length; i++)
     {

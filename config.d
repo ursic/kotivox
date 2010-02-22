@@ -45,6 +45,9 @@ public const int MAIN_WINDOW_LEFT_COLUMN_WIDTH = 240;
 public const int MAIN_WINDOW_CALENDAR_HEIGHT = 200;
 public const int MAIN_WINDOW_LEFT_COLUMN_BUTTON_HEIGHT = 40;
 public const int CATEGORY_CHECKBOX_WIDTH = 24;
+public const int CATEGORY_LABEL_WIDTH = 182;
+public const int ADD_REMOVE_BUTTON_WIDTH = 49;
+public const int ADD_REMOVE_BUTTON_HEIGHT = 34;
 public const int CATEGORY_NAME_WIDTH = 180;
 public const int CATEGORY_LIST_HEIGHT = 300;
 
@@ -65,7 +68,9 @@ public const char[] CANNOT_REGISTER = "I don't have enough data for registration
 public const char[] CATEGORIES_TEXT = "Categories";
 public const char[] NEW_CATEGORY_TEXT = "New category";
 public const char[] CLEAR_MENU_ITEM_TEXT = "Clear";
+public const char[] ADD_REMOVE_TEXT = "+ −";
 public const char[] ADD_REMOVE_BUTTON_TOOLTIP = "Add/Remove";
+public const char[] SAVE_CLOSE_TEXT = "Save && Close";
 
 public const int KEY_ENTER = 13;
 public const int KEY_KP_ENTER = 16777296;
@@ -101,3 +106,5 @@ public const char[] NOTES_TEXT = "Notes";
 
 public const char[] CHAIN_FILE_EXTENSION = ".ksc";
 public const char[] CHAIN_TEXT = "Seinfeld's chains";
+public const int CHAIN_LOCK_BUTTON_WIDTH = 30;
+public const char[] CHAIN_LOCK_TEXT = "L";
