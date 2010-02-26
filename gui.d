@@ -1420,7 +1420,7 @@ public class GUI
 		    if(0 == (searchResults = Storage.search(this.txtSearch.getText,
 							    getSelectedCategories(this.catList))).length)
 			searchResults = Storage.getSearchResultPage;
-		    
+
 		    drawSearchResultsWindow(searchResults, this.txtPad, this.cal);
 		}
 	    }

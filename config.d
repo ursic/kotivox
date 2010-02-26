@@ -90,10 +90,10 @@ public int FONT_SIZE_4 = 14;
 public int SEARCH_RESULTS_LINE_HEIGHT = 16;
 public int SEARCH_KEYWORDS_MIN_LENGTH = 3;
 
-// character length of prepended and appended text
-// to single search result
+// Character length of prepended and appended text
+// to single search result.
 public int SEARCH_RESULT_LENGTH = 80;
-// character length of single search result page
+// Character length of single search result page.
 public int SEARCH_RESULT_PAGE_LENGTH = 1400;
 
 public const char[] TODAY_TEXT = "Today";

@@ -330,8 +330,7 @@ private class SearchResultPage
 
     static int getNextIndex()
     {
-	if(0 == resultPages.length)
-	    return 0;
+	if(0 == resultPages.length) return 0;
 
 	return resultPages[resultPages.length - 1].index + 1;
     }
@@ -464,13 +463,23 @@ private class SearchResultPage
 		    char[] head;
 		    char[] core;
 		    char[] tail;
+		    // Start head after first whitespace so we don't
+		    // cut any variable-width characters.
 		    if(0 <= (location - appendLength))
+		    {
 			head = day.text[location - appendLength..location];
+			head = head[find(head, " ") + 1..$];
+		    }
 
 		    core = day.text[location..location + keywordStr.length];
 
+		    // End tail after last whitespace so we don't
+		    // cut any variable-width characters.
 		    if((location + keywordStr.length + appendLength) <= day.text.length)
+		    {
 			tail = day.text[location + keywordStr.length..location + keywordStr.length + appendLength];
+			tail = tail[0..rfind(tail, " ")];
+		    }
 
 		    int year = Integer.toInt(day.name[0..4]);
 		    int month = Integer.toInt(day.name[4..6]);
