@@ -213,7 +213,7 @@ void addChainPaintListener(Canvas canvas)
 		cy += height;
 	    }
 
-	    (cast(GridData)this.cs.getLayoutData).heightHint = cast(int)(cy * 1.1);
+	    (cast(GridData)this.cs.getLayoutData).heightHint = cast(int)(cy * 1.05);
 
 	    Composite c = this.cs.getParent;
 	    ScrolledComposite sc = cast(ScrolledComposite)c.getParent;
@@ -247,7 +247,7 @@ void drawChainWindow(int id)
 
     rightGroup.setLayout(new GridLayout(1, true));
 
-    ScrolledComposite sc = new ScrolledComposite(rightGroup, DWT.V_SCROLL | DWT.H_SCROLL);
+    ScrolledComposite sc = new ScrolledComposite(rightGroup, DWT.V_SCROLL);
     sc.setLayoutData(new GridData(DWT.FILL, DWT.FILL, true, true));
     Composite c = new Composite(sc, DWT.BORDER);
     c.setLayout(new GridLayout(1, false));

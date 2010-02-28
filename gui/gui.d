@@ -25,6 +25,8 @@ import tango.core.Exception;
 import tango.core.Array;
 import tango.time.chrono.Gregorian;
 
+import dwt.widgets.Caret;
+
 import tango.io.Stdout;
 
 import config;
@@ -2057,6 +2059,9 @@ public class GUI
 	textPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
  	textPad.setLayoutData(rightData);
 	textPad.setKeyBinding(DWT.MOD1 + 'A', ST.SELECT_ALL);
+ 	textPad.setScrollBarVisible(textPad.getVerticalBar, false);
+ 	textPad.setScrollBarVisible(textPad.getHorizontalBar, false);
+ 	textPad.layout;
 
 	// Right-click / context menu for text area.
 	Menu textPadMenu = new Menu(textPad);

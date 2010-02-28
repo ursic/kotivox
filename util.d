@@ -35,10 +35,11 @@ import dwt.widgets.DateTime;
 
 private struct Date
 {
-    int day;
+    int day = -1;
     int month;
     int year;
 }
+private static Date date;
 
 
 /*
@@ -323,48 +324,25 @@ char[] serialize(int[] array)
  */
 Date today()
 {
+    if(-1 != date.day) return date;
+
     static time_t rawtime;
     static tm* timeinfo;
 
-    char[3] day;
-    char[3] month;
-    char[5] year;
-    
-    char[] d;
-    char[] m;
-    char[] y;
+    char[11] dateBuff;
 
-    char* str = toStringz(day);
-    char* format = "%d";
+    char* dateStrp = toStringz(dateBuff);
+    char* format = "%Y.%m.%d";
     time(&rawtime);
     timeinfo = localtime(&rawtime);
     if(-1 != mktime(timeinfo))
-      strftime(str, 3, format, timeinfo);
+      strftime(dateStrp, 11, format, timeinfo);
 
-    d = Txt.stripl(fromStringz(str), '0');
+    char[][] nums = Txt.split(fromStringz(dateStrp), ".");
 
-    str = toStringz(month);
-    format = "%m";
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-    if(-1 != mktime(timeinfo))
-      strftime(str, 3, format, timeinfo);
-
-    m = Txt.stripl(fromStringz(str), '0');
-
-    str = toStringz(year);
-    format = "%Y";
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-    if(-1 != mktime(timeinfo))
-      strftime(str, 5, format, timeinfo);
-
-    y = fromStringz(str);
-
-    static Date date;
-    date.day = Integer.toInt(d);
-    date.month = Integer.toInt(m);
-    date.year = Integer.toInt(y);
+    date.day = Integer.toInt(nums[2]);
+    date.month = Integer.toInt(nums[1]);
+    date.year = Integer.toInt(nums[0]);
 
     return date;
 }
