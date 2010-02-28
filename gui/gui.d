@@ -19,89 +19,20 @@
  *
  *****************************************************************************/
 
-module gui;
+module gui.gui;
 
-import dwt.DWT;
-import dwt.graphics.Rectangle;
-import dwt.graphics.Font;
-import dwt.graphics.FontData;
-import dwt.graphics.Color;
-import dwt.graphics.TextLayout;
-import dwt.layout.FillLayout;
-import dwt.layout.GridData;
-import dwt.layout.GridLayout;
-import dwt.widgets.Button;
-import dwt.widgets.Composite;
-import dwt.custom.ScrolledComposite;
-import dwt.widgets.Control;
-import dwt.widgets.Display;
-import dwt.widgets.Group;
-import dwt.widgets.Shell;
-import dwt.widgets.Decorations;
-import dwt.widgets.Text;
-import dwt.custom.StyledText;
-import dwt.custom.ST;
-import dwt.custom.StyleRange;
-import dwt.widgets.Button;
-import dwt.widgets.Label;
-import dwt.widgets.Event;
-import dwt.widgets.Listener;
-import dwt.widgets.DateTime;
-import dwt.widgets.Menu;
-import dwt.widgets.MenuItem;
-import dwt.widgets.Link;
-import dwt.events.ShellAdapter;
-import dwt.events.SelectionAdapter;
-import dwt.events.MenuAdapter;
-import dwt.events.SelectionEvent;
-import dwt.events.ShellEvent;
-import dwt.events.ModifyListener;
-import dwt.events.MenuDetectListener;
-import dwt.events.MenuDetectEvent;
-import dwt.custom.ExtendedModifyEvent;
-import dwt.custom.ExtendedModifyListener;
-import dwt.events.MenuListener;
-import dwt.events.KeyListener;
-import dwt.events.KeyEvent;
-import dwt.events.MenuEvent;
-import dwt.events.FocusListener;
-import dwt.events.FocusEvent;
-
-import Integer = tango.text.convert.Integer;
-import Clock = tango.time.Clock;
-import tango.io.Stdout;
 import tango.core.Exception;
 import tango.core.Array;
-import Txt = tango.text.Util;
 import tango.time.chrono.Gregorian;
 
+import tango.io.Stdout;
+
 import config;
+import gui.chain;
 import util;
 import io;
 import auth;
 import storage;
-
-
-/*
-  Per-widget data.
- */
-private class Data
-{
-    private char[][char[]] values;
-
-    this(char[] key, char[] value)
-    {
-	this.values[key] = value;
-    }
-
-    private char[] get(char[] key)
-    {
- 	if(key in this.values)
- 	    return this.values[key];
-
-	return "";
-    }
-}
 
 
 /*
@@ -516,7 +447,7 @@ public class GUI
 	    }
 	    public void keyPressed(KeyEvent event)
             {
-		if(KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode)
+		if((event.keyCode == KEY_ENTER) || (event.keyCode == KEY_KP_ENTER))
 		{
 		    switch((cast(Data)event.widget.getData).get("name"))
 		    {
@@ -749,15 +680,14 @@ public class GUI
 		date ~= Integer.toString(this.cal.getMonth + 1) ~ "-";
 		date ~= Integer.toString(this.cal.getYear);
 
-		auto now = Clock.Clock().toDate;
-		char[] today = Integer.toString(now.date.day) ~ "-";
-		today ~= Integer.toString(now.date.month) ~ "-";
-		today ~= Integer.toString(now.date.year);
+		char[] todayStr = Integer.toString(today.day) ~ "-";
+		todayStr ~= Integer.toString(today.month) ~ "-";
+		todayStr ~= Integer.toString(today.year);
 
 		saveText(this.txtPad);
 
-		// allow editing of today's entry only
-		if(today == date)
+		// Allow editing of today's entry only.
+		if(todayStr == date)
 		{
 		    this.txtPad.setEditable(true);
 		    this.txtPad.setMenu(this.textMenu);
@@ -900,7 +830,7 @@ public class GUI
 	    public void keyPressed(KeyEvent event)
 	    {
 		// Mark next match.
-		if(KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode)
+		if((event.keyCode == KEY_ENTER) || (event.keyCode == KEY_KP_ENTER))
 		{
 		    char[] find = (cast(Data)this.fnd.getData).get("find");
 		    char[][] finds = Txt.split(find, " ");
@@ -913,8 +843,8 @@ public class GUI
 		    char[][] newFinds = rotateLeft(finds);
 
 		    // Mark previous match.
-		    if(((event.stateMask & DWT.SHIFT) == DWT.SHIFT) &&
-		       (KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode))
+		    if((event.stateMask == DWT.SHIFT) &&
+		       (event.keyCode == KEY_ENTER || event.keyCode == KEY_KP_ENTER))
 			newFinds = rotateRight(finds);
 
 		    int start = Integer.toInt(newFinds[0]);
@@ -927,7 +857,7 @@ public class GUI
 		    this.txtPad.setSelection(start, start + length);
 		}
 
-		if(KEY_ESC == event.keyCode)
+		if(event.keyCode == KEY_ESC)
 		{
 		    auto parent = this.fnd.getParent;
 		    this.fnd.dispose;
@@ -956,7 +886,7 @@ public class GUI
 	    {
 		// Save encrypted text to file when "CTRL + S" pressed
 		if(this.txtPad.getEditable &&
-		   (((event.stateMask & DWT.CTRL) == DWT.CTRL) && (KEY_S == event.keyCode)))
+		   ((event.stateMask == DWT.CTRL) && (event.keyCode == KEY_S)))
 		{
 		    saveText(this.txtPad);
 		    Storage.saveFinal;
@@ -964,12 +894,12 @@ public class GUI
 
 		// Emerge small text input beneath text pad for
 		// incremental find in currently displayed text
-		if(((event.stateMask & DWT.CTRL) == DWT.CTRL) && (KEY_F == event.keyCode))
+		if((event.stateMask == DWT.CTRL) && (event.keyCode == KEY_F))
 		    drawIncrementalFindInput(this.txtPad);
 
 		// Refresh text pad content - DEBUG
 		if(this.txtPad.getEditable &&
-		   (((event.stateMask & DWT.CTRL) == DWT.CTRL) && (KEY_R == event.keyCode)))
+		   ((event.stateMask == DWT.CTRL) && (event.keyCode == KEY_R)))
 		{
  		    this.txtPad.setText(Storage.getText);
 		    this.txtPad.setData(new Data("noteid", "-1"));
@@ -1409,7 +1339,7 @@ public class GUI
 	    }
 	    public void keyPressed(KeyEvent event)
 	    {
-		if(KEY_ENTER == event.keyCode || KEY_KP_ENTER == event.keyCode)
+		if((event.keyCode == KEY_ENTER) || (event.keyCode == KEY_KP_ENTER))
 		{
 		    // Save current text so it becomes searchable,
 		    // and cannot be overwritten when jump to search result is made.
@@ -1444,11 +1374,10 @@ public class GUI
 	    // calls DateTime Selection listener twice for some reason.
 	    public void handleEvent(Event event)
 	    {
-		auto date = Clock.Clock().toDate.date;
 		this.cal.setDay(1);
-		this.cal.setYear(date.year);
-		this.cal.setMonth(date.month - 1);
-		this.cal.setDay(date.day);
+		this.cal.setYear(today.year);
+		this.cal.setMonth(today.month - 1);
+		this.cal.setDay(today.day);
 		markCalendarDays(this.cal);
 		hideSearchChildren(this.txtPad.getParent);
 		saveText(this.txtPad);
@@ -1486,9 +1415,9 @@ public class GUI
     /*
       Store current text when focused on note.
      */
-    private void addNoteFocusListener(Text noteText, StyledText textPad)
+    private void addNoteMouseListener(Text noteText, StyledText textPad)
     {
-	noteText.addFocusListener(new class(noteText, textPad) FocusListener
+	noteText.addMouseListener(new class(noteText, textPad) MouseAdapter
         {
 	    Text noteTxt;
 	    StyledText txtPad;
@@ -1497,7 +1426,7 @@ public class GUI
 		this.noteTxt = noteText;
 		this.txtPad = textPad;
 	    }
-	    public void focusGained(FocusEvent event)
+	    public void mouseDown(MouseEvent event)
 	    {
 		hideSearchChildren(this.txtPad.getParent);
 		saveText(this.txtPad);
@@ -1509,7 +1438,6 @@ public class GUI
 		this.txtPad.setData(new Data("noteid", (noteID)));
 		this.txtPad.setEditable(true);
 	    }
-	    public void focusLost(FocusEvent event){}
 	});
     }
 
@@ -1787,7 +1715,7 @@ public class GUI
 	    // Prevent default menu.
 	    noteText.setMenu(new Menu(noteText));
 	    addNoteNameModifyListener(noteText);
-	    addNoteFocusListener(noteText, textPad);
+	    addNoteMouseListener(noteText, textPad);
 	}
 
 	ScrolledComposite scn = cast(ScrolledComposite)noteEditList.getParent;
@@ -1851,7 +1779,7 @@ public class GUI
 		    noteText.setMenu(new Menu(noteText));
 		    Storage.noteContent(Integer.toInt(id), name);
 		    addNoteNameModifyListener(noteText);
-		    addNoteFocusListener(noteText, this.txtPad);
+		    addNoteMouseListener(noteText, this.txtPad);
 		}
 
 		// Redraw parent container.
@@ -1927,20 +1855,19 @@ public class GUI
     /*
       Draw chain user has focused on.
      */
-    private void addChainFocusListener(Text chainText)
+    private void addChainMouseListener(Text chainText)
     {
-	chainText.addFocusListener(new class(chainText) FocusListener
+	chainText.addMouseListener(new class(chainText) MouseAdapter
         {
 	    Text chainTxt;
 	    this(Text t)
 	    {
 		this.chainTxt = chainText;
 	    }
-	    public void focusGained(FocusEvent event)
+	    public void mouseDown(MouseEvent event)
 	    {
-		Stdout("drawing chain", (cast(Data)this.chainTxt.getData).get("id")).newline;
+		drawChainWindow(Integer.toInt((cast(Data)this.chainTxt.getData).get("id")));
 	    }
-	    public void focusLost(FocusEvent event){}
 	});
     }
 
@@ -1962,7 +1889,7 @@ public class GUI
 	    // Prevent default menu.
 	    chainText.setMenu(new Menu(chainText));
  	    addChainNameModifyListener(chainText);
- 	    addChainFocusListener(chainText);
+ 	    addChainMouseListener(chainText);
 	}
 
 	ScrolledComposite scc = cast(ScrolledComposite)chainEditList.getParent;
@@ -2023,7 +1950,7 @@ public class GUI
 		    // Prevent default menu.
 		    chainText.setMenu(new Menu(chainText));
  		    addChainNameModifyListener(chainText);
- 		    addChainFocusListener(chainText);
+ 		    addChainMouseListener(chainText);
 		}
 
 		// Redraw parent container.
@@ -2100,6 +2027,7 @@ public class GUI
 	Composite rightComposite = new Composite(shell, DWT.NONE);
 	rightComposite.setLayout(rightLayout);
 	rightComposite.setLayoutData(rightCol);
+	rightComposite.setData(new Data("name", RIGHT_GROUP));
 
 	// Calendar.
         GridData calendarData = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH, DWT.DEFAULT);

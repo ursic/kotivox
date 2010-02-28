@@ -23,7 +23,6 @@ module util;
 
 import Integer = tango.text.convert.Integer;
 import Txt = tango.text.Util;
-import Clock = tango.time.Clock;
 import tango.stdc.stringz;
 import tango.stdc.time;
 import Utf = tango.text.convert.Utf;
@@ -32,6 +31,15 @@ import tango.math.random.Kiss;
 import tango.io.digest.Sha512;
 
 import dwt.widgets.DateTime;
+
+
+private struct Date
+{
+    int day;
+    int month;
+    int year;
+}
+
 
 /*
   Return formatted date string.
@@ -50,7 +58,7 @@ char[] dayName(int year, int month, int day)
     time_str.tm_min = 0;
     time_str.tm_sec = 1;
     time_str.tm_isdst = -1;
-    if (mktime(&time_str) != -1)
+    if(-1 != mktime(&time_str))
       strftime(daybuf, 36, format, &time_str);
 
     return fromStringz(daybuf);
@@ -69,23 +77,29 @@ char[] timestamp()
     static tm* timeinfo;
     time(&rawtime);
     timeinfo = localtime(&rawtime);
-    if(mktime(timeinfo) != -1)
+    if(-1 != mktime(timeinfo))
       strftime(timestamp, 6, format, timeinfo);
 
     return fromStringz(timestamp);
 }
 
 
+/*
+  Return string formatted for file name containing
+  today's date.
+ */
 char[] getTodayFileName()
 {
-  auto now = Clock.Clock().toDate;
-  char[] fileName = dateToFileName(now.date.year,
-				   now.date.month,
-				   now.date.day);
+  char[] fileName = dateToFileName(today.year,
+				   today.month,
+				   today.day);
   return fileName;
 }
 
 
+/*
+  Convert date to string and return it.
+*/
 char[] dateToFileName(int _year, int _month, int _day)
 {
     char[] year = Integer.toString(_year);
@@ -272,9 +286,7 @@ char[] digest(char[] str)
 char[] sanitizeStr(char[] instr, int strlen = 30, bool singleLine = true)
 {
     char[] str = instr;
-    if(strlen < instr.length)
-	str = instr[0..strlen];
-    str = Txt.trim(str);
+    if(strlen < instr.length) str = Txt.trim(instr[0..strlen]);
     if(singleLine) str = Txt.substitute(str, "\n", "");
     return str;
 }
@@ -294,6 +306,7 @@ void removeInts(ref int[] array, int element)
     array = elements;
 }
 
+
 /*
   Concatenate array of integers and return resulting string.
 */
@@ -302,4 +315,56 @@ char[] serialize(int[] array)
     char[] str;
     foreach(el; array) str ~= Integer.toString(el);
     return str;
+}
+
+
+/*
+  Return today's date structure.
+ */
+Date today()
+{
+    static time_t rawtime;
+    static tm* timeinfo;
+
+    char[3] day;
+    char[3] month;
+    char[5] year;
+    
+    char[] d;
+    char[] m;
+    char[] y;
+
+    char* str = toStringz(day);
+    char* format = "%d";
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    if(-1 != mktime(timeinfo))
+      strftime(str, 3, format, timeinfo);
+
+    d = Txt.stripl(fromStringz(str), '0');
+
+    str = toStringz(month);
+    format = "%m";
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    if(-1 != mktime(timeinfo))
+      strftime(str, 3, format, timeinfo);
+
+    m = Txt.stripl(fromStringz(str), '0');
+
+    str = toStringz(year);
+    format = "%Y";
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    if(-1 != mktime(timeinfo))
+      strftime(str, 5, format, timeinfo);
+
+    y = fromStringz(str);
+
+    static Date date;
+    date.day = Integer.toInt(d);
+    date.month = Integer.toInt(m);
+    date.year = Integer.toInt(y);
+
+    return date;
 }

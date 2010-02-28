@@ -23,7 +23,7 @@ module main;
 
 import config;
 import auth;
-import gui;
+import gui.gui;
 import io;
 
 void main()

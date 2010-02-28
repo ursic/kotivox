@@ -108,3 +108,5 @@ public const char[] CHAIN_FILE_EXTENSION = ".ksc";
 public const char[] CHAIN_TEXT = "Seinfeld's chains";
 public const int CHAIN_LOCK_BUTTON_WIDTH = 30;
 public const char[] CHAIN_LOCK_TEXT = "L";
+
+public const char[] RIGHT_GROUP = "rightGroup";
