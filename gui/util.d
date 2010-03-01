@@ -55,6 +55,11 @@ public import dwt.events.FocusEvent;
 public import dwt.events.PaintListener;
 public import dwt.events.PaintEvent;
 
+import Txt = tango.text.Util;
+import Integer = tango.text.convert.Integer;
+
+public import config;
+
 
 /*
   Per-widget data.
@@ -75,4 +80,34 @@ public class Data
 
 	return "";
     }
+}
+
+
+/*
+  Set control font
+*/
+void setFont(Control control, int size, int style)
+{
+    Font font = new Font(Display.getCurrent,
+			 new FontData(FONT_FACE_1,
+				      size,
+				      style));
+    control.setFont(font);
+}
+
+
+Color getColor(char[] colorSetting)
+{
+    int[] colors;
+    auto settings = Txt.split(colorSetting, " ");
+    if(3 != settings.length)
+	settings = Txt.split(USER_CATEGORY_BACKGROUND_COLOR, " ");
+
+    foreach(setting; settings)
+	colors ~= Integer.convert(setting);
+
+    return new Color(Display.getCurrent,
+		     colors[0],
+		     colors[1],
+		     colors[2]);
 }

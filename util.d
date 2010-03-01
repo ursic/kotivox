@@ -39,22 +39,24 @@ private struct Date
     int month;
     int year;
 }
-private static Date date;
+private const static Date date;
 
 
 /*
   Return formatted date string.
  */
-char[] dayName(int year, int month, int day)
+char[] dateFormat(char[] formatStr = "%A, %e. %B, %Y", Date date = date)
 {
+    if(-1 == date.day) date = today;
+
     char[36] dayStr;
     char* daybuf = toStringz(dayStr);
-    char* format = "%A, %e. %B, %Y";
+    char* format = toStringz(formatStr);
     static tm time_str;
 
-    time_str.tm_year = year - 1900;
-    time_str.tm_mon = month - 1;
-    time_str.tm_mday = day;
+    time_str.tm_year = date.year - 1900;
+    time_str.tm_mon = date.month - 1;
+    time_str.tm_mday = date.day;
     time_str.tm_hour = 0;
     time_str.tm_min = 0;
     time_str.tm_sec = 1;
@@ -122,7 +124,7 @@ char[] dateToFileName(int _year, int _month, int _day)
 
 
 /*
-  Convert date to string and return it.
+  Convert DateTime to string and return it.
   Return today's string if no date provided.
  */
 char[] dateStr(DateTime date = null)
@@ -132,6 +134,20 @@ char[] dateStr(DateTime date = null)
     return dateToFileName(date.getYear,
 			  date.getMonth + 1,
 			  date.getDay);
+}
+
+
+/*
+  Convert Date to string and return it.
+  Return today's string if no date provided.
+ */
+char[] dateStr(Date date = date)
+{
+    if(-1 == date.day) return getTodayFileName;
+    
+    return dateToFileName(date.year,
+			  date.month,
+			  date.day);
 }
 
 
@@ -332,7 +348,7 @@ Date today()
     char[11] dateBuff;
 
     char* dateStrp = toStringz(dateBuff);
-    char* format = "%Y.%m.%d";
+    char* format = "%d.%m.%Y";
     time(&rawtime);
     timeinfo = localtime(&rawtime);
     if(-1 != mktime(timeinfo))
@@ -340,9 +356,22 @@ Date today()
 
     char[][] nums = Txt.split(fromStringz(dateStrp), ".");
 
-    date.day = Integer.toInt(nums[2]);
+    date.day = Integer.toInt(nums[0]);
     date.month = Integer.toInt(nums[1]);
-    date.year = Integer.toInt(nums[0]);
+    date.year = Integer.toInt(nums[2]);
 
+    return date;
+}
+
+
+/*
+  Convert date string to Date structure and return it.
+ */
+Date dateStrToDate(char[] dateStr)
+{
+    static Date date;
+    date.year = Integer.toInt(dateStr[0..4]);
+    date.month = Integer.toInt(dateStr[4..6]);
+    date.day = Integer.toInt(dateStr[6..$]);
     return date;
 }

@@ -105,8 +105,14 @@ public const char[] NOTE_FILE_EXTENSION = ".kn";
 public const char[] NOTES_TEXT = "Notes";
 
 public const char[] CHAIN_FILE_EXTENSION = ".ksc";
-public const char[] CHAIN_TEXT = "Seinfeld's chains";
+public const char[] CHAIN_TITLE_TEXT = "Seinfeld's chains";
+public const char[] CHAIN_TEXT = "Chain";
+public const char[] CHAIN_BACKROUNG_COLOR = "255 255 255";
 public const int CHAIN_LOCK_BUTTON_WIDTH = 30;
-public const char[] CHAIN_LOCK_TEXT = "L";
+public const char[] CHAIN_LOCK_TEXT = "LOCK";
+public const char[] CHAIN_UNLOCK_TEXT = "UNLOCK";
+public const int CHAIN_DESCRIPTION_LENGTH = 200;
 
 public const char[] RIGHT_GROUP = "rightGroup";
+
+public const int CHAIN_DESCRIPTION_INPUT_HEIGHT = 100;

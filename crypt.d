@@ -76,10 +76,15 @@ void k_encrypt_from_string(char[] _instring, char[] _outfile, char[] _key)
   into string and point _oustring pointer to decrypted string
   Return decrypted string
  */
-char[] k_decrypt_to_string(char[] _infile, char *_outstring, char[] _key)
+char[] k_decrypt_to_string(char[] _infile, char[] _key)
 {
-    char *key = toStringz(_key);
-    char *infile = toStringz(_infile);
+    char* infile = toStringz(_infile);
+    char* _outstring;
+    char* key = toStringz(_key);
 
-    return fromStringz(decrypt_to_string(infile, _outstring, key));
+    char[] textOut;
+    char[] text = fromStringz(decrypt_to_string(infile, _outstring, key));
+    foreach(char c; text) textOut ~= c;
+
+    return textOut;
 }

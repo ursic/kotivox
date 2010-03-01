@@ -1,10 +1,10 @@
 module gui.chain;
 
-public import gui.util;
-import config;
-import storage;
-
 import tango.stdc.math;
+
+public import gui.util;
+import util;
+import storage;
 
 import tango.io.Stdout;
 
@@ -132,17 +132,21 @@ private class Day
 }
 
 
-void addChainMouseListener(Canvas canvas)
+void addChainMouseListener(Canvas canvas, int chainID)
 {
-    canvas.addMouseListener(new class(canvas) MouseAdapter
+    canvas.addMouseListener(new class(canvas, chainID) MouseAdapter
     {
 	Canvas cs;
-	this(Canvas c)
+	int id;
+	this(Canvas c, int cid)
 	{
 	    this.cs = canvas;
+	    this.id = chainID;
 	}
 	public void mouseDown(MouseEvent event)
         {
+	    if(Storage.isChainLocked(this.id)) return;
+
 	    foreach(day; Day.days)
 	    {
 		int x = day.x;
@@ -170,14 +174,16 @@ void addChainMouseListener(Canvas canvas)
 }
 
 
-void addChainPaintListener(Canvas canvas)
+void addChainPaintListener(Canvas canvas, int chainID)
 {
-    canvas.addPaintListener(new class(canvas) PaintListener
+    canvas.addPaintListener(new class(canvas, chainID) PaintListener
     {
 	Canvas cs;
-	this(Canvas c)
+	int id;
+	this(Canvas c, int cid)
 	{
 	    this.cs = canvas;
+	    this.id = chainID;
 	}
 	public void paintControl(PaintEvent event)
         {
@@ -188,8 +194,54 @@ void addChainPaintListener(Canvas canvas)
 	    Point size = this.cs.getSize;
 	    int cx = 0;
 	    int cy = 0;
+
+	    auto start = Storage.getChainStartDate(this.id);
+	    Stdout("dates", Storage.getChainDates(this.id)).newline;
+
+	    Stdout("date", start.day, start.month, start.year).newline;
+
+	    if(start.year < today.year)
+		Stdout("draw link to previous year").newline;
+
+	    // Draw beginning of chain to the end.
+	    // Draw month's name.
+	    char[] monthName = dateFormat("%B", start);
+	    Font font = new Font(Display.getCurrent,
+				 new FontData(FONT_FACE_1,
+					      FONT_SIZE_3,
+					      DWT.NONE));
+	    gc.setFont(font);
+	    gc.drawText(monthName, cx, cy, true);
+
+	    Point extent = gc.stringExtent(monthName);
+	    cy = extent.y + 10;
+
+	    // Draw weekday names.
+	    font = new Font(Display.getCurrent,
+			    new FontData(FONT_FACE_1,
+					 FONT_SIZE_2,
+					 DWT.NONE));
+	    gc.setFont(font);
+
 	    int width = size.x / 7;
-	    int height = width;
+	    int height = width / 6;
+	    char[] w = "Wednesday";
+	    extent = gc.stringExtent(w);
+	    int xPos = 0;
+	    int yPos = 0;
+//	    static Date
+	    for(int i = 0; i < 7; i++)
+	    {
+		gc.drawRectangle(cx, cy, width, height);
+		xPos = cx + cast(int)round(width / 2) - cast(int)round(extent.x / 2);
+		yPos = cy + cast(int)round(height / 2) - cast(int)round(extent.y / 2);
+		gc.drawText("Wednesday", xPos, yPos, true);
+		cx += width;
+	    }
+
+	    return;
+
+//	    int height = width;
 	    for(int i = 0; i < 6; i++)
 	    {
 		for(int j = 0; j < 7; j++)
@@ -217,8 +269,77 @@ void addChainPaintListener(Canvas canvas)
 
 	    Composite c = this.cs.getParent;
 	    ScrolledComposite sc = cast(ScrolledComposite)c.getParent;
-	    Composite rg = sc.getParent;
  	    sc.setMinSize(c.computeSize(DWT.DEFAULT, DWT.DEFAULT));
+	}
+    });
+}
+
+
+/*
+  Save chain description when changed.
+*/
+void addChainDescriptionListener(Text text, int chainID)
+{
+    text.addModifyListener(new class(text, chainID) ModifyListener
+    {
+	Text txt;
+	int id;
+	this(Text t, int cid)
+	{
+	    this.txt = text;
+	    this.id = chainID;
+	}
+	public void modifyText(ModifyEvent event)
+	{
+	    Storage.chainDesc(this.id, this.txt.getText);
+	}
+    });
+}
+
+
+/*
+  Menu option for locking and unlocking a chain.
+*/
+void addLockMenuOption(Text text, int chainID)
+{
+    Menu menu = text.getMenu;
+
+    char[] lockStr = CHAIN_LOCK_TEXT;
+    if(Storage.isChainLocked(chainID)) lockStr = CHAIN_UNLOCK_TEXT;
+
+    MenuItem item = new MenuItem(menu, DWT.NONE);
+    item.setText(lockStr);
+
+    item.addSelectionListener(new class(item, text, chainID) SelectionAdapter
+    {
+	MenuItem option;
+	Text txt;
+	int id;
+	this(MenuItem mi, Text t, int id)
+	{
+	    this.option = item;
+	    this.txt = text;
+	    this.id = chainID;
+	}
+	public void widgetSelected(SelectionEvent event)
+	{
+	    // Lock chain.
+	    if(CHAIN_LOCK_TEXT == this.option.getText)
+	    {
+		Storage.lockChain(this.id);
+		this.option.setText(CHAIN_UNLOCK_TEXT);
+		this.txt.setEditable(false);
+		// Cosmetics: by drawing it afresh we get rid of
+		// blinking caret.
+		drawChainWindow(this.id);
+	    }
+	    // Unlock chain.
+	    else
+	    {
+		Storage.unlockChain(this.id);
+		this.option.setText(CHAIN_LOCK_TEXT);
+		this.txt.setEditable(true);
+	    }
 	}
     });
 }
@@ -226,6 +347,7 @@ void addChainPaintListener(Canvas canvas)
 
 void drawChainWindow(int id)
 {
+    // Retrieve right composite.
     Shell shell = Display.getCurrent.getShells[0];
 
     Composite rightGroup;
@@ -242,28 +364,35 @@ void drawChainWindow(int id)
     // Clean up the composite.
     foreach(child; rightGroup.getChildren) child.dispose;
 
-//     rightGroup.setBackgroundMode(DWT.INHERIT_DEFAULT);
-//     rightGroup.setBackground(new Color(Display.getCurrent, 255, 255, 255));
+    // Chain description.
+    GridData gdt = new GridData(GridData.FILL_HORIZONTAL);
+    Text text = new Text(rightGroup, DWT.CENTER | DWT.MULTI | DWT.BORDER);
+    text.setMenu(new Menu(text));
+    gdt.heightHint = CHAIN_DESCRIPTION_INPUT_HEIGHT;
+    text.setLayoutData(gdt);
+    text.setText(Storage.chainDesc(id));
+    text.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+    setFont(text, FONT_SIZE_3, DWT.NONE);
+    if(Storage.isChainLocked(id)) text.setEditable(false);
+    addChainDescriptionListener(text, id);
+    addLockMenuOption(text, id);
 
-    rightGroup.setLayout(new GridLayout(1, true));
-
+    // Canvas for chain.
     ScrolledComposite sc = new ScrolledComposite(rightGroup, DWT.V_SCROLL);
     sc.setLayoutData(new GridData(DWT.FILL, DWT.FILL, true, true));
     Composite c = new Composite(sc, DWT.BORDER);
     c.setLayout(new GridLayout(1, false));
     c.setBackgroundMode(DWT.INHERIT_DEFAULT);
-    c.setBackground(new Color(Display.getCurrent, 255, 255, 255));
+    c.setBackground(getColor(CHAIN_BACKROUNG_COLOR));
 
-
-    GridData gdc = new GridData(DWT.FILL, DWT.FILL, true, true);
     Canvas canvas = new Canvas(c, DWT.NONE);
-    canvas.setLayoutData(gdc);
+    canvas.setLayoutData(new GridData(DWT.FILL, DWT.FILL, true, true));
     sc.setContent(c);
     sc.setExpandHorizontal(true);
     sc.setExpandVertical(true);
 
     rightGroup.layout;
 
-    addChainPaintListener(canvas);
-    addChainMouseListener(canvas);
+    addChainPaintListener(canvas, id);
+    addChainMouseListener(canvas, id);
 }

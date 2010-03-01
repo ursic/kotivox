@@ -29,7 +29,6 @@ import dwt.widgets.Caret;
 
 import tango.io.Stdout;
 
-import config;
 import gui.chain;
 import util;
 import io;
@@ -121,35 +120,6 @@ public class GUI
 	    categoryRanges ~= [style.start, style.length, style.fontStyle];
 
 	return categoryRanges;
-    }
-
-
-    private Color getColor(char[] colorSetting)
-    {
-	int[] colors;
-	auto settings = Txt.split(colorSetting, " ");
-	if(3 != settings.length)
-	    settings = Txt.split(USER_CATEGORY_BACKGROUND_COLOR, " ");
-
-	foreach(setting; settings)
-	    colors ~= Integer.convert(setting);
-
-	return new Color(Display.getCurrent,
-			 colors[0],
-			 colors[1],
-			 colors[2]);
-    }
-
-
-    /*
-      Set control font
-     */
-    private void setFont(Control control, int size, int style)
-    {
-	Font font = new Font(Display.getCurrent, new FontData(FONT_FACE_1,
-							      size,
-							      style));
-	control.setFont(font);
     }
 
 
@@ -329,9 +299,9 @@ public class GUI
     }
 
 
-    private void addMenuOption(MenuOption option, StyledText txtPad)
+    private void addMenuOption(MenuOption option, StyledText textPad)
     {
-	Menu menu = txtPad.getMenu;
+	Menu menu = textPad.getMenu;
 	removeMenuOption(menu, option);
 	MenuItem item;
 	if(-1 == option.index)
@@ -340,7 +310,7 @@ public class GUI
 	    item = new MenuItem(menu, option.style, option.index);
 	item.setData(new Data("id", option.id));
 	if(0 < option.text.length) item.setText(option.text);
-	addMenuItemListener(item, menu, txtPad);
+	addMenuItemListener(item, menu, textPad);
     }
 
 
@@ -516,7 +486,7 @@ public class GUI
 	gdMsg.heightHint = LOGIN_TEXT_INPUT_HEIGHT * 3;
 	Label lMsg = new Label(formGroup, DWT.LEFT | DWT.WRAP);
 	Color color = new Color(Display.getCurrent, 0, 0, 150);
-	setFont(cast(Control)lMsg, FONT_SIZE_4, DWT.BOLD);
+	setFont(lMsg, FONT_SIZE_4, DWT.BOLD);
 	lMsg.setForeground(color);
         lMsg.setLayoutData(gdMsg);
 
@@ -769,7 +739,7 @@ public class GUI
 	Text find = new Text(parent, DWT.BORDER);
 	find.setLayoutData(gdFind);
 	find.setMenu(new Menu(find));
-	setFont(cast(Control)find, FONT_SIZE_3, DWT.NONE);
+	setFont(find, FONT_SIZE_3, DWT.NONE);
 	find.setFocus;
 	(cast(GridData)textPad.getLayoutData).heightHint = parent.getSize.y - INCREMENTAL_SEARCH_BOX_HEIGHT;
 	parent.layout;
@@ -1064,12 +1034,12 @@ public class GUI
 		int lineBegin = this.txtPad.getOffsetAtLine(this.txtPad.getLineAtOffset(start));
 		if(this.txtPad.getCharCount <= lineBegin) return;
 
-		static MenuOption separator1 = {style:DWT.SEPARATOR,
-						id:SEPARATOR1_ID};
+		static MenuOption separator1 = {id:SEPARATOR1_ID,
+						style:DWT.SEPARATOR};
 		static MenuOption timestamp = {id:TIMESTAMP_ID};
 		timestamp.text = "(" ~ util.timestamp ~ ")";
-		static MenuOption separator2 = {style:DWT.SEPARATOR,
-						id:SEPARATOR2_ID};
+		static MenuOption separator2 = {id:SEPARATOR2_ID,
+						style:DWT.SEPARATOR};
 		static MenuOption clear = {id:CLEAR_ID,
 					   text:CLEAR_MENU_ITEM_TEXT};
 
@@ -1284,20 +1254,16 @@ public class GUI
 		if("JUMP" == event.text[0..4])
 		{
 		    char[] dayName = event.text[4..12];
-		    int year = Integer.toInt(dayName[0..4]);
-		    int month = Integer.toInt(dayName[4..6]);
-		    int day = Integer.toInt(dayName[6..8]);
+		    Date date = dateStrToDate(dayName);
 
 		    saveText(txtPad);
 
-		    if(getTodayFileName == dateToFileName(year, month, day))
-			txtPad.setEditable(true);
-		    else
-			txtPad.setEditable(false);
+		    if(getTodayFileName == dayName) txtPad.setEditable(true);
+		    else txtPad.setEditable(false);
 
-		    this.cal.setYear(year);
-		    this.cal.setMonth(month - 1);
-		    this.cal.setDay(day);
+		    this.cal.setYear(date.year);
+		    this.cal.setMonth(date.month - 1);
+		    this.cal.setDay(date.day);
 		    markCalendarDays(this.cal);
 
 		    txtPad.setText(Storage.getText(this.cal));
@@ -1449,7 +1415,7 @@ public class GUI
     {
 	GridData gdSearch = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH - 8, DWT.DEFAULT);
 	Text textSearch = new Text(composite, DWT.DEFAULT);
-	setFont(cast(Control)textSearch, FONT_SIZE_3, DWT.ITALIC);
+	setFont(textSearch, FONT_SIZE_3, DWT.ITALIC);
 	textSearch.setText(SEARCH_BOX_TEXT);
 	textSearch.setForeground(new Color(Display.getCurrent, 191, 191, 191));
 	textSearch.setLayoutData(gdSearch);
@@ -1472,7 +1438,7 @@ public class GUI
 		if("0" == (cast(Data)this.txtSearch.getData).get("used"))
 		{
 		    this.txtSearch.setText("");
-		    setFont(cast(Control)this.txtSearch, FONT_SIZE_3, DWT.NONE);
+		    setFont(this.txtSearch, FONT_SIZE_3, DWT.NONE);
 		    this.txtSearch.setForeground(new Color(Display.getCurrent, 0, 0, 0));
 		}
 		this.txtSearch.setData(new Data("used", "1"));
@@ -1535,7 +1501,7 @@ public class GUI
 
 	    GridData gdCatName = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
 	    Text catText = new Text(catEditList, DWT.NONE);
-	    setFont(cast(Control)catText, FONT_SIZE_1, DWT.NONE);
+	    setFont(catText, FONT_SIZE_1, DWT.NONE);
 	    catText.setLayoutData(gdCatName);
 	    catText.setData(new Data("id", id));
 	    catText.setText(name);
@@ -1628,7 +1594,7 @@ public class GUI
 
 		    GridData gdText = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
 		    Text catText = new Text(this._catEditList, DWT.NONE);
-		    setFont(cast(Control)catText, FONT_SIZE_1, DWT.NONE);
+		    setFont(catText, FONT_SIZE_1, DWT.NONE);
 		    catText.setData(new Data("id", id));
 		    catText.setText(NEW_CATEGORY_TEXT);
 		    catText.setLayoutData(gdText);
@@ -1664,14 +1630,14 @@ public class GUI
 	GridData gdCat1 = new GridData(CATEGORY_LABEL_WIDTH, DWT.DEFAULT);
 	Button catCheck = new Button(catEditGroup, DWT.CHECK);
 	catCheck.setLayoutData(gdCat1);
-	setFont(cast(Control)catCheck, FONT_SIZE_1, DWT.BOLD);
+	setFont(catCheck, FONT_SIZE_1, DWT.BOLD);
 	catCheck.setSelection(true);
         catCheck.setText(CATEGORIES_TEXT);
 
 	GridData gdCat2 = new GridData(ADD_REMOVE_BUTTON_WIDTH, ADD_REMOVE_BUTTON_HEIGHT);
 	Button catAdd = new Button(catEditGroup, DWT.LEFT);
 	catAdd.setLayoutData(gdCat2);
-	setFont(cast(Control)catAdd, FONT_SIZE_2, DWT.BOLD);
+	setFont(catAdd, FONT_SIZE_2, DWT.BOLD);
         catAdd.setText(ADD_REMOVE_TEXT);
 	catAdd.setToolTipText(ADD_REMOVE_BUTTON_TOOLTIP);
 
@@ -1709,7 +1675,7 @@ public class GUI
 	{
 	    GridData gdNoteName = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
 	    Text noteText = new Text(noteEditList, DWT.NONE);
-	    setFont(cast(Control)noteText, FONT_SIZE_1, DWT.NONE);
+	    setFont(noteText, FONT_SIZE_1, DWT.NONE);
 	    noteText.setLayoutData(gdNoteName);
 	    noteText.setData(new Data("id", Integer.toString(id)));
 	    noteText.setText(name);
@@ -1772,7 +1738,7 @@ public class GUI
 
 		    GridData gdText = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
 		    Text noteText = new Text(this._noteEditList, DWT.NONE);
-		    setFont(cast(Control)noteText, FONT_SIZE_1, DWT.NONE);
+		    setFont(noteText, FONT_SIZE_1, DWT.NONE);
 		    noteText.setData(new Data("id", id));
 		    noteText.setText(name);
 		    noteText.setLayoutData(gdText);
@@ -1803,13 +1769,13 @@ public class GUI
 	GridData gdNote1 = new GridData(CATEGORY_LABEL_WIDTH, DWT.DEFAULT);
 	Label lNotes = new Label(notesEditGroup, DWT.NONE);
 	lNotes.setLayoutData(gdNote1);
-	setFont(cast(Control)lNotes, FONT_SIZE_1, DWT.BOLD);
+	setFont(lNotes, FONT_SIZE_1, DWT.BOLD);
         lNotes.setText(NOTES_TEXT);
 
 	GridData gdNote2 = new GridData(ADD_REMOVE_BUTTON_WIDTH, ADD_REMOVE_BUTTON_HEIGHT);
 	Button noteAdd = new Button(notesEditGroup, DWT.CENTER);
 	noteAdd.setLayoutData(gdNote2);
-	setFont(cast(Control)noteAdd, FONT_SIZE_2, DWT.BOLD);
+	setFont(noteAdd, FONT_SIZE_2, DWT.BOLD);
         noteAdd.setText(ADD_REMOVE_TEXT);
 	noteAdd.setToolTipText(ADD_REMOVE_BUTTON_TOOLTIP);
 
@@ -1883,7 +1849,7 @@ public class GUI
 	{
 	    GridData gdChainName = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
 	    Text chainText = new Text(chainEditList, DWT.NONE);
-	    setFont(cast(Control)chainText, FONT_SIZE_1, DWT.NONE);
+	    setFont(chainText, FONT_SIZE_1, DWT.NONE);
 	    chainText.setLayoutData(gdChainName);
 	    chainText.setData(new Data("id", Integer.toString(id)));
 	    chainText.setText(name);
@@ -1944,7 +1910,7 @@ public class GUI
 
 		    GridData gdText = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
 		    Text chainText = new Text(this._chainEditList, DWT.NONE);
-		    setFont(cast(Control)chainText, FONT_SIZE_1, DWT.NONE);
+		    setFont(chainText, FONT_SIZE_1, DWT.NONE);
 		    chainText.setData(new Data("id", id));
 		    chainText.setText(name);
 		    chainText.setLayoutData(gdText);
@@ -1974,13 +1940,13 @@ public class GUI
 	GridData gdChain1 = new GridData(CATEGORY_LABEL_WIDTH, DWT.DEFAULT);
 	Label lChains = new Label(chainsEditGroup, DWT.NONE);
 	lChains.setLayoutData(gdChain1);
-	setFont(cast(Control)lChains, FONT_SIZE_1, DWT.BOLD);
-        lChains.setText(CHAIN_TEXT);
+	setFont(lChains, FONT_SIZE_1, DWT.BOLD);
+        lChains.setText(CHAIN_TITLE_TEXT);
 
 	GridData gdChain2 = new GridData(ADD_REMOVE_BUTTON_WIDTH, ADD_REMOVE_BUTTON_HEIGHT);
 	Button chainAdd = new Button(chainsEditGroup, DWT.LEFT);
 	chainAdd.setLayoutData(gdChain2);
-	setFont(cast(Control)chainAdd, FONT_SIZE_2, DWT.BOLD);
+	setFont(chainAdd, FONT_SIZE_2, DWT.BOLD);
         chainAdd.setText(ADD_REMOVE_TEXT);
 	chainAdd.setToolTipText(ADD_REMOVE_BUTTON_TOOLTIP);
 
@@ -2044,7 +2010,7 @@ public class GUI
 	Button bToday = new Button(leftComposite, DWT.BORDER);
         gdButtonToday.verticalAlignment = DWT.CENTER;
 	gdButtonToday.heightHint = MAIN_WINDOW_LEFT_COLUMN_BUTTON_HEIGHT;
-	setFont(cast(Control)bToday, FONT_SIZE_3, DWT.BOLD);
+	setFont(bToday, FONT_SIZE_3, DWT.BOLD);
 	bToday.setText(TODAY_TEXT);
         bToday.setLayoutData(gdButtonToday);
 
@@ -2053,7 +2019,7 @@ public class GUI
 	StyledText textPad = new StyledText(rightComposite,
 					    DWT.BORDER | DWT.MULTI | DWT.H_SCROLL | DWT.V_SCROLL);
 	textPad.setFocus;
-	setFont(cast(Control)textPad, FONT_SIZE_1, DWT.NONE);
+	setFont(textPad, FONT_SIZE_1, DWT.NONE);
 	textPad.setText(Storage.getText);
 	textPad.setData(new Data("noteid", "-1"));
 	textPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
@@ -2084,18 +2050,18 @@ public class GUI
 	Button bExit = new Button(leftComposite, DWT.BORDER);
         gdButtonExit.verticalAlignment = DWT.CENTER;
 	gdButtonExit.heightHint = MAIN_WINDOW_LEFT_COLUMN_BUTTON_HEIGHT;
-	setFont(cast(Control)bExit, FONT_SIZE_3, DWT.BOLD);
+	setFont(bExit, FONT_SIZE_3, DWT.BOLD);
 	bExit.setText(SAVE_CLOSE_TEXT);
         bExit.setLayoutData(gdButtonExit);
 
 	bExit.addListener(DWT.Selection, new class(textPad, shell, bExit) Listener
 	{
-	    StyledText text;
+	    StyledText txtPad;
 	    Shell shell;
 	    Button btnExit;
 	    this(StyledText text, Shell shell, Button button)
 	    {
-		this.text = textPad;
+		this.txtPad = textPad;
 		this.shell = shell;
 		this.btnExit = bExit;
 	    }
@@ -2103,7 +2069,9 @@ public class GUI
 	    {
 		if(event.widget is this.btnExit)
 		{
-		    saveText(this.text);
+		    if(!this.txtPad.isDisposed)
+			saveText(this.txtPad);
+
 		    Storage.saveFinal;
 		    this.shell.close;
 		}

@@ -60,15 +60,11 @@ private class Day
      */
     static private void loadDays()
     {
-	// gather all day files for this user
+	// Gather all day files for this user.
 	foreach(file; (new FileScan)(Auth.userDirPath, USER_DAY_FILE_EXTENSION).files)
 	{
-	    // decrypt text and store it
-	    char *textp;
-	    char[] textOut;
-	    char[] text = k_decrypt_to_string(file.path ~ file.file, textp, Auth.cipherKey);
-	    foreach(char c; text) textOut ~= c;
-
+	    // Decrypt text and store it.
+	    char[] textOut = k_decrypt_to_string(file.path ~ file.file, Auth.cipherKey);
 	    days ~= new Day(file.name, textOut);
 	}
     }
@@ -129,7 +125,7 @@ private class Category
     private int id;
     private char[] name;
     static private Category[] categories;
-    // category retrieval counter
+    // Category retrieval counter.
     static private int catRetrCount = 0;
     static private char[] origDigest;
 
@@ -228,10 +224,7 @@ private class Category
 	if(!(new FilePath(filename)).exists) return;
 	
 	// Decrypt categories file and store categories.
-	char *textp;
-	char[] content;
-	char[] text = k_decrypt_to_string(filename, textp, Auth.cipherKey);
-	foreach(char c; text) content ~= c;
+	char[] content = k_decrypt_to_string(filename, Auth.cipherKey);
 
 	Category.origDigest = digest(content);
 
@@ -481,12 +474,8 @@ private class SearchResultPage
 			tail = tail[0..rfind(tail, " ")];
 		    }
 
-		    int year = Integer.toInt(day.name[0..4]);
-		    int month = Integer.toInt(day.name[4..6]);
-		    int mday = Integer.toInt(day.name[6..8]);
-
-		    char[] date = dayName(year, month, mday);
-		    result ~= "<a href=\"JUMP" ~ day.name ~ Integer.toString(location) ~ "-" ~ this.keywords  ~ "\">" ~ date ~ "</a>\n";
+		    char[] dateStr = dateFormat("%A, %e. %B, %Y", dateStrToDate(day.name));
+		    result ~= "<a href=\"JUMP" ~ day.name ~ Integer.toString(location) ~ "-" ~ this.keywords  ~ "\">" ~ dateStr ~ "</a>\n";
 		    result ~= head ~ Unicode.toUpper(core) ~ tail;
 		    result ~= "\n\n";
 		    numResults++;
@@ -649,7 +638,9 @@ private class Note
 	    noteFiles ~= noteFilePath;
 
 	    // Skip note with unchanged content.
-	    if((note.origName == note.name) && (digest(note.content) == note.origDigest)) continue;
+	    if((note.origName == note.name) &&
+	       (digest(note.content) == note.origDigest))
+		continue;
 
 	    // Write name of the note in first line.
 	    char[] content = note.name ~ "\n" ~ note.content;
@@ -674,11 +665,7 @@ private class Note
 	foreach(file; (new FileScan)(Auth.userDirPath, NOTE_FILE_EXTENSION).files)
 	{
 	    // Decrypt text and store it.
-	    char *textp;
-	    char[] textOut;
-	    char[] text = k_decrypt_to_string(file.path ~ file.file, textp, Auth.cipherKey);
-	    foreach(char c; text) textOut ~= c;
-
+	    char[] textOut = k_decrypt_to_string(file.path ~ file.file, Auth.cipherKey);
 	    char[][] lines = Txt.splitLines(textOut);
 
 	    // First line contains note's name.
@@ -729,28 +716,29 @@ private class Chain
     private char[] origName;
     private char[] desc;
     private char[] filename;
-    private int startDate;
+    private Date startDate;
+    private bool locked = false;
     private int[] dates;
-    private char[] origDigest;
+    private bool changed = false;
     static private Chain[] chains;
 
     this(char[] name,
-	 int startDate = -1,
+	 Date startDate = today,
 	 char[] desc = "",
-	 char[] filename = "",
+	 bool locked = false,
+	 char[] filename = randStr ~ CHAIN_FILE_EXTENSION,
 	 int[] dates = null)
     {
 	this.id = getFreeSlot(getIds);
 	this.name = sanitizeStr(name);
-	this.origName = this.name;
 	this.startDate = startDate;
-	if(-1 == this.startDate)
-	    this.startDate = Integer.toInt(dateStr);
 	this.desc = desc;
-	if(desc.length <= 0) this.desc = name;
-	if(filename.length <= 0) filename = randStr ~ CHAIN_FILE_EXTENSION;
+	this.locked = locked;
 	this.filename = filename;
-	this.origDigest = digest(serialize(dates.sort));
+
+//	this.startDate.year = 2009;
+	this.startDate.day = 17;
+	this.startDate.month = 1;
     }
 
     static private int[] getIds()
@@ -764,6 +752,7 @@ private class Chain
     {
 	int id = getFreeSlot(getIds);
 	chains ~= new Chain(CHAIN_TEXT ~ " " ~ Integer.toString(id + 1));
+	chains[$ - 1].changed = true;
 	return id;
     }
 
@@ -800,6 +789,7 @@ private class Chain
 	    if(chain.id == id)
 	    {
 		chain.name = sanitizeStr(name);
+		chain.changed = true;
 		break;
 	    }
 	}
@@ -819,7 +809,8 @@ private class Chain
 	{
 	    if(chain.id == id)
 	    {
-		chain.desc = sanitizeStr(desc, 200, false);
+		chain.desc = sanitizeStr(desc, CHAIN_DESCRIPTION_LENGTH, false);
+		chain.changed = true;
 		break;
 	    }
 	}
@@ -836,6 +827,7 @@ private class Chain
 		if(!contains(chain.dates, date))
 		{
 		    chain.dates ~= date;
+		    chain.changed = true;
 		    break;
 		}
 	    }
@@ -850,8 +842,72 @@ private class Chain
 	    if(chain.id == id)
 	    {
 		chain.dates.removeInts(date);
+		chain.changed = true;
 		break;
 	    }
+    }
+
+    /*
+      Return start date.
+     */
+    static private Date getStartDate(int id)
+    {
+	foreach(chain; chains)
+	    if(chain.id == id) return chain.startDate;
+
+	static Date date = {day: -1};
+	return date;
+    }
+
+    /*
+      Return marked days.
+     */
+    static private int[] getDates(int id)
+    {
+	foreach(chain; chains)
+	    if(chain.id == id) return chain.dates;
+
+	return [];
+    }
+
+    /*
+      Lock chain from editing.
+     */
+    static private void lock(int id)
+    {
+	foreach(chain; chains)
+	    if(chain.id == id)
+	    {
+		chain.locked = true;
+		chain.changed = true;
+		break;
+	    }
+    }
+
+    /*
+      Unlock chain for editing.
+     */
+    static private void unlock(int id)
+    {
+	foreach(chain; chains)
+	    if(chain.id == id)
+	    {
+		chain.locked = false;
+		chain.changed = true;
+		break;
+	    }
+    }
+
+    /*
+      Remove date from chain of given id.
+     */
+    static private bool isLocked(int id)
+    {
+	foreach(chain; chains)
+	    if((chain.id == id) && chain.locked)
+		return true;
+
+	return false;
     }
 
     /*
@@ -877,9 +933,7 @@ private class Chain
 	    chainFiles ~= chainFilePath;
 
 	    // Skip chain with unchanged content.
-	    if((chain.origName == chain.name) &&
-	       (digest(serialize(chain.dates.sort)) == chain.origDigest))
-		continue;
+	    if(!chain.changed) continue;
 
 	    // Write description length in first line.
 	    // Write name in second line.
@@ -887,7 +941,10 @@ private class Chain
 	    // After description follow dates, each in its line.
 	    char[] content = Integer.toString(chain.desc.length);
 	    content ~= "\n" ~ chain.name;
-	    content ~= "\n" ~ Integer.toString(chain.startDate);
+	    content ~= "\n" ~ dateStr(chain.startDate);
+	    Stdout("chain date", dateStr(chain.startDate)).newline;
+	    int locked = chain.locked ? 1 : 0;
+	    content ~= "\n" ~ Integer.toString(locked);
 	    content ~= "\n" ~ chain.desc;
 	    char[] dates;
 	    foreach(date; chain.dates) dates ~= Integer.toString(date) ~ "\n";
@@ -895,8 +952,6 @@ private class Chain
 	    k_encrypt_from_string(content,
 				  chainFilePath,
 				  Auth.cipherKey);
-	    chain.origName = chain.name;
-	    chain.origDigest = digest(serialize(chain.dates.sort));
 	}
 
 	// Remove obsolete chain files.
@@ -913,27 +968,21 @@ private class Chain
 	foreach(file; (new FileScan)(Auth.userDirPath, CHAIN_FILE_EXTENSION).files)
 	{
 	    // Decrypt text and store it.
-	    char *textp;
-	    char[] textOut;
-	    char[] text = k_decrypt_to_string(file.path ~ file.file, textp, Auth.cipherKey);
-	    foreach(char c; text) textOut ~= c;
-
+	    char[] textOut = k_decrypt_to_string(file.path ~ file.file, Auth.cipherKey);
 	    char[][] lines = Txt.splitLines(textOut);
 	    int descLen = Integer.toInt(lines[0]);
-	    char[] name = lines[1];
-	    int startDate = Integer.toInt(lines[2]);
-	    char[] desc = lines[3][0..descLen];
 	    int[] dates;
-	    if((8 + descLen) == lines[3].length)
+	    if((8 + descLen) == lines[4].length)
 	    {
-		dates ~= Integer.toInt(lines[3][descLen..$]);
+		dates ~= Integer.toInt(lines[4][descLen..$]);
 		// Subsequent lines are dates.
 		for(int i = 4; i < lines.length - 1; i++)
 		    dates ~= Integer.toInt(lines[i]);
 	    }
-	    chains ~= new Chain(name,
-				startDate,
-				desc,
+	    chains ~= new Chain(lines[1],
+				dateStrToDate(lines[2]),
+				lines[4][0..descLen],
+				(1 == Integer.toInt(lines[3])) ? true : false,
 				file.file,
 				dates);
 	}
@@ -1036,11 +1085,7 @@ public class Storage
 	foreach(file; (new FileScan)(Auth.userDirPath, USER_CATEGORY_RANGES_FILE_EXTENSION).files)
 	{
 	    // decrypt category ranges into array
-	    char *textp;
-	    char[] ranges;
-	    char[] text = k_decrypt_to_string(file.path ~ file.file, textp, Auth.cipherKey);
-	    foreach(char c; text)
-		ranges ~= c;
+	    char[] ranges = k_decrypt_to_string(file.path ~ file.file, Auth.cipherKey);
 
 	    int[][] catRanges;
 	    foreach(char[] range; parseLines(ranges))
@@ -1157,10 +1202,9 @@ public class Storage
 	int[] days;
 	foreach(day; Day.days)
 	{
-	    char[] dateStr = dateToFileName(date.getYear,
-					    date.getMonth + 1,
-					    date.getDay);
-	    // given day is in Day array and has content
+	    char[] dateStr = dateStr(date);
+
+	    // Given day is in Day array and has content.
 	    if((day.name[0..6] == dateStr[0..6]) && (0 < day.text.length))
 		days ~= Integer.toInt(day.name[6..8]);
 	}
@@ -1239,14 +1283,39 @@ public class Storage
 	Chain.chainDesc(id, desc);
     }
 
-    static public void addDate(int chainID, int date)
+    static public void addChainDate(int chainID, int date)
     {
 	Chain.addDate(chainID, date);
     }
 
-    static public void removeDate(int chainID, int date)
+    static public void removeChainDate(int chainID, int date)
     {
 	Chain.removeDate(chainID, date);
+    }
+
+    static public Date getChainStartDate(int chainID)
+    {
+	return Chain.getStartDate(chainID);
+    }
+
+    static public int[] getChainDates(int chainID)
+    {
+	return Chain.getDates(chainID);
+    }
+
+    static public void lockChain(int chainID)
+    {
+	Chain.lock(chainID);
+    }
+
+    static public void unlockChain(int chainID)
+    {
+	Chain.unlock(chainID);
+    }
+
+    static public bool isChainLocked(int chainID)
+    {
+	return Chain.isLocked(chainID);
     }
 
 //     static public void saveChains()
