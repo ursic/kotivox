@@ -57,14 +57,36 @@ char[] dateFormat(char[] formatStr = "%A, %e. %B, %Y", Date date = date)
     time_str.tm_year = date.year - 1900;
     time_str.tm_mon = date.month - 1;
     time_str.tm_mday = date.day;
-    time_str.tm_hour = 0;
-    time_str.tm_min = 0;
-    time_str.tm_sec = 1;
     time_str.tm_isdst = -1;
     if(-1 != mktime(&time_str))
       strftime(daybuf, 36, format, &time_str);
 
     return fromStringz(daybuf);
+}
+
+
+/*
+  Return day names.
+ */
+char[][] dayNames()
+{
+    char[11] dayStr;
+    char* dayBuf = toStringz(dayStr);
+    char* format = toStringz("%A");
+    char[][] names;
+    static tm time_str;
+
+    for(int i = 0; i < 7; i++)
+    {
+	time_str.tm_wday = i;
+	strftime(dayBuf,
+		 dayStr.length,
+		 format,
+		 &time_str);
+	names ~= fromStringz(dayBuf);
+	dayBuf = toStringz(dayStr);
+    }
+    return names;
 }
 
 
@@ -80,8 +102,10 @@ char[] timestamp()
     static tm* timeinfo;
     time(&rawtime);
     timeinfo = localtime(&rawtime);
-    if(-1 != mktime(timeinfo))
-      strftime(timestamp, 6, format, timeinfo);
+    strftime(timestamp,
+	     timeStr.length,
+	     format,
+	     timeinfo);
 
     return fromStringz(timestamp);
 }
@@ -360,6 +384,20 @@ Date today()
     date.month = Integer.toInt(nums[1]);
     date.year = Integer.toInt(nums[2]);
 
+    return date;
+}
+
+
+/*
+  Convert date integer to Date structure and return it.
+ */
+Date dateStrToDate(int dateInt)
+{
+    char[] dateStr = Integer.toString(dateInt);
+    static Date date;
+    date.year = Integer.toInt(dateStr[0..4]);
+    date.month = Integer.toInt(dateStr[4..6]);
+    date.day = Integer.toInt(dateStr[6..$]);
     return date;
 }
 

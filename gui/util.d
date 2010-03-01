@@ -60,6 +60,7 @@ import Integer = tango.text.convert.Integer;
 
 public import config;
 
+import tango.io.Stdout;
 
 /*
   Per-widget data.
@@ -75,11 +76,22 @@ public class Data
 
     public char[] get(char[] key)
     {
- 	if(key in this.values)
- 	    return this.values[key];
-
+ 	if(key in this.values) return this.values[key];
 	return "";
     }
+}
+
+
+/*
+  Return required font.
+*/
+Font getFont(int size, int style)
+{
+    Font font = new Font(Display.getCurrent,
+			 new FontData(FONT_FACE_1,
+				      size,
+				      style));
+    return font;
 }
 
 

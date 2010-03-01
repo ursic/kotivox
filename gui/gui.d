@@ -255,10 +255,9 @@ public class GUI
      */
     private void markCalendarDays(DateTime calendar)
     {
-	Gregorian gc = new Gregorian;
-	int maxDays = gc.getDaysInMonth(calendar.getYear,
-					calendar.getMonth + 1,
-					Gregorian.AD_ERA);
+	int maxDays = (new Gregorian).getDaysInMonth(calendar.getYear,
+						     calendar.getMonth + 1,
+						     Gregorian.AD_ERA);
 	int[] days = Storage.getDayNumbers(calendar);
 	for(int i = 1; i <= maxDays; i++)
 	{
@@ -1206,7 +1205,7 @@ public class GUI
 	(cast(GridData)textPad.getLayoutData).heightHint = parent.getSize.y / 2;
 	parent.layout(true);
 
-	link.addListener(DWT.Selection, new class(parent, sc, link, calendar) Listener
+	link.addSelectionListener(new class(parent, sc, link, calendar) SelectionAdapter
         {
 	    Composite _parent;
 	    ScrolledComposite scrolled;
@@ -1219,7 +1218,7 @@ public class GUI
 		this.lnk = link;
 		this.cal = calendar;
 	    }
-	    public void handleEvent(Event event)
+	    public void widgetSelected(SelectionEvent event)
 	    {
 		// Close "Search results" window.
 		if("CLOSE" == event.text)
@@ -1329,7 +1328,7 @@ public class GUI
 
     private void addTodayButtonListener(Button button, DateTime calendar, StyledText text)
     {
-	button.addListener(DWT.Selection, new class(calendar, text) Listener
+	button.addSelectionListener(new class(calendar, text) SelectionAdapter
 	{
 	    DateTime cal;
 	    StyledText txtPad;
@@ -1340,7 +1339,7 @@ public class GUI
 	    }
 	    // Doing it the long way, because setDate of DateTime
 	    // calls DateTime Selection listener twice for some reason.
-	    public void handleEvent(Event event)
+	    public void widgetSelected(SelectionEvent event)
 	    {
 		this.cal.setDay(1);
 		this.cal.setYear(today.year);
@@ -1454,7 +1453,7 @@ public class GUI
      */
     private void addCategoryCheckListener(Button catCheck, Composite catEditList)
     {
-	catCheck.addListener(DWT.Selection, new class(catCheck, catEditList) Listener
+	catCheck.addSelectionListener(new class(catCheck, catEditList) SelectionAdapter
 	{
 	    Button _catCheck;
 	    Composite _catEditList;
@@ -1463,7 +1462,7 @@ public class GUI
 		this._catCheck = catCheck;
 		this._catEditList = catEditList;
 	    }
-	    public void handleEvent(Event e)
+	    public void widgetSelected(SelectionEvent event)
 	    {
 		foreach(Control c; this._catEditList.getChildren)
 		{
@@ -1530,7 +1529,7 @@ public class GUI
      */
     private void addCategoryToggleListener(Button catAdd, Composite catEditList, StyledText textPad)
     {
-	catAdd.addListener(DWT.Selection, new class(catEditList, textPad) Listener
+	catAdd.addSelectionListener(new class(catEditList, textPad) SelectionAdapter
 	{
 	    Composite _catEditList;
 	    ScrolledComposite _sc;
@@ -1544,7 +1543,7 @@ public class GUI
 		this.txtPadMenu = this.txtPad.getMenu;
 	    }
 
-	    public void handleEvent(Event event)
+	    public void widgetSelected(SelectionEvent event)
 	    {
 		// Remove categories with empty names
 		// and belonging checkboxes.
@@ -1699,7 +1698,7 @@ public class GUI
      */
     private void addNoteToggleListener(Button noteAdd, Composite noteEditList, StyledText textPad)
     {
-	noteAdd.addListener(DWT.Selection, new class(noteEditList, textPad) Listener
+	noteAdd.addSelectionListener(new class(noteEditList, textPad) SelectionAdapter
 	{
 	    Composite _noteEditList;
 	    ScrolledComposite _scn;
@@ -1710,8 +1709,7 @@ public class GUI
 		this._scn = cast(ScrolledComposite)noteEditList.getParent;
 		this.txtPad = textPad;
 	    }
-
-	    public void handleEvent(Event event)
+	    public void widgetSelected(SelectionEvent event)
 	    {
 		// Remove notes with empty names.
 		bool disposed = false;
@@ -1873,7 +1871,7 @@ public class GUI
      */
     private void addChainToggleListener(Button chainAdd, Composite chainEditList)
     {
-	chainAdd.addListener(DWT.Selection, new class(chainEditList) Listener
+	chainAdd.addSelectionListener(new class(chainEditList) SelectionAdapter
 	{
 	    Composite _chainEditList;
 	    ScrolledComposite _scc;
@@ -1883,7 +1881,7 @@ public class GUI
 		this._scc = cast(ScrolledComposite)chainEditList.getParent;
 	    }
 
-	    public void handleEvent(Event event)
+	    public void widgetSelected(SelectionEvent event)
 	    {
 		// Remove chains with empty names.
 		bool disposed = false;
@@ -1905,13 +1903,14 @@ public class GUI
 		// Add new chain if none have been disposed.
 		if(!disposed)
 		{
-		    char[] id = Integer.toString(Storage.addChain);
-		    char[] name = CHAIN_TEXT ~ " " ~ Integer.toString(Integer.toInt(id) + 1);
+		    int id = Storage.addChain;
+		    char[] name = CHAIN_TEXT ~ " " ~ Integer.toString(id + 1);
+		    Storage.chainDesc(id, name);
 
 		    GridData gdText = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
 		    Text chainText = new Text(this._chainEditList, DWT.NONE);
 		    setFont(chainText, FONT_SIZE_1, DWT.NONE);
-		    chainText.setData(new Data("id", id));
+		    chainText.setData(new Data("id", Integer.toString(id)));
 		    chainText.setText(name);
 		    chainText.setLayoutData(gdText);
 		    chainText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));

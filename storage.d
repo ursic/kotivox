@@ -736,9 +736,11 @@ private class Chain
 	this.locked = locked;
 	this.filename = filename;
 
-//	this.startDate.year = 2009;
+	this.startDate.year = 2008;
 	this.startDate.day = 17;
 	this.startDate.month = 1;
+	
+	this.dates = [20080102, 20080203, 20090506, 20090507, 20100210, 20100211, 20100212];
     }
 
     static private int[] getIds()
@@ -862,12 +864,22 @@ private class Chain
     /*
       Return marked days.
      */
-    static private int[] getDates(int id)
+    static private int[] getDates(int id, int year)
     {
+	int[] dates;
 	foreach(chain; chains)
-	    if(chain.id == id) return chain.dates;
-
-	return [];
+	{
+	    if(chain.id == id)
+	    {
+		foreach(date; chain.dates)
+		{
+		    if(year == dateStrToDate(date).year)
+			dates ~= date;
+		}
+		return dates;
+	    }
+	}
+	return dates;
     }
 
     /*
@@ -970,13 +982,13 @@ private class Chain
 	    // Decrypt text and store it.
 	    char[] textOut = k_decrypt_to_string(file.path ~ file.file, Auth.cipherKey);
 	    char[][] lines = Txt.splitLines(textOut);
-	    int descLen = Integer.toInt(lines[0]);
-	    int[] dates;
+ 	    int descLen = Integer.toInt(lines[0]);
+ 	    int[] dates;
+	    // Extract dates which are touching description.
 	    if((8 + descLen) == lines[4].length)
 	    {
 		dates ~= Integer.toInt(lines[4][descLen..$]);
-		// Subsequent lines are dates.
-		for(int i = 4; i < lines.length - 1; i++)
+		for(int i = 5; i < lines.length - 1; i++)
 		    dates ~= Integer.toInt(lines[i]);
 	    }
 	    chains ~= new Chain(lines[1],
@@ -1298,9 +1310,9 @@ public class Storage
 	return Chain.getStartDate(chainID);
     }
 
-    static public int[] getChainDates(int chainID)
+    static public int[] getChainDates(int chainID, int year)
     {
-	return Chain.getDates(chainID);
+	return Chain.getDates(chainID, year);
     }
 
     static public void lockChain(int chainID)
