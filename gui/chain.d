@@ -14,6 +14,7 @@ import tango.io.Stdout;
 private struct ChainData
 {
     int id;
+    Date start;
     int year;
 }
 private ChainData cd;
@@ -143,7 +144,7 @@ private class Day
 }
 
 
-private void addChainMouseListener(Canvas canvas)
+private void addChainClickListener(Canvas canvas)
 {
     canvas.addMouseListener(new class(canvas) MouseAdapter
     {
@@ -184,27 +185,55 @@ private void addChainMouseListener(Canvas canvas)
 
 
 private void addChainYearListener(Button button,
-				  Date start,
 				  Canvas canvas)
 {
-    button.addSelectionListener(new class(button, start, canvas) SelectionAdapter
+    button.addSelectionListener(new class(button, canvas) SelectionAdapter
     {
 	Button btn;
-	Date strt;
 	Canvas cs;
-	this(Button b, Date d, Canvas c)
+	this(Button b, Canvas c)
 	{
 	    this.btn = button;
-	    this.strt = start;
 	    this.cs = canvas;
 	}
 	public void widgetSelected(SelectionEvent event)
 	{
+	    Stdout("WIDGET SELECTED").newline;
+
 	    cd.year += Integer.toInt((cast(Data)this.btn.getData).get("increment"));
 
 	    // Reset canvas for new chain year.
-	    foreach(child; cs.getChildren) child.dispose;
-	    this.cs.redraw;
+//	    foreach(child; cs.getChildren) child.dispose;
+
+//	    this.cs.setData(new Data("locked", "1"));
+	    drawChainYear(this.cs);
+//	    this.cs.redraw;
+	}
+    });
+}
+
+
+/*
+  Draw previous/next year depending on mousewheel motion.
+ */
+private void addChainScrollListener(Canvas canvas)
+{
+    canvas.addMouseWheelListener(new class(canvas) MouseWheelListener
+    {
+	Canvas cs;
+	this(Canvas c)
+	{
+	    this.cs = canvas;
+	}
+	public void mouseScrolled(MouseEvent event)
+	{
+	    if(0 < event.count)
+		cd.year++;
+
+	    if(event.count < 0)
+		cd.year--;
+
+	    drawChainYear(this.cs);
 	}
     });
 }
@@ -213,15 +242,21 @@ private void addChainYearListener(Button button,
 /*
   Draw chain for given days in a year.
  */
-private void drawChainYear(Date start, Canvas canvas)
+private void drawChainYear(Canvas canvas)
 {
     Stdout("DRAW CHAIN YEAR").newline;
 
+    GC gc = new GC(canvas);
+    canvas.drawBackground(gc, 0, 0, canvas.getSize.x, canvas.getSize.y);
+
     int[] chainDates = Storage.getChainDates(cd.id, cd.year);
 
-    if(chainDates.length <= 0) return;
+    if(chainDates.length <= 0)
+    {
+	Stdout("NO DATES").newline;
+	return;
+    }
 
-    GC gc = new GC(canvas);
     int x = 0;
     int y = 0;
     int width = canvas.getSize.x;
@@ -235,59 +270,24 @@ private void drawChainYear(Date start, Canvas canvas)
 		y + 10,
 		true);
 
-    // Draw button to previous year.
-    if(start.year < cd.year)
-    {
-	Button previousYear = new Button(canvas, DWT.ARROW | DWT.LEFT);
-	char[] yearTxt = Integer.toString(cd.year - 1);
-	previousYear.setBounds(x + 10,
-			       y + 10,
-			       CHAIN_BUTTON_SIZE,
-			       CHAIN_BUTTON_SIZE);
-// 	Stdout("drew button for", cd.year - 1).newline;
-// 	Stdout("text dims", x + 10 + CHAIN_BUTTON_SIZE + 10).newline;
-	gc.setFont(getFont(FONT_SIZE_2, DWT.NONE));
-	gc.drawText(yearTxt,
-		    x + 10 + CHAIN_BUTTON_SIZE + 10,
-		    y + 12,
-		    true);
-	previousYear.setData(new Data("increment", "-1"));
-	addChainYearListener(previousYear,
-			     start,
-			     canvas);
-    }
-
-    // Draw button to next year.
-    if(cd.year < today.year)
-    {
-	Button nextYear = new Button(canvas, DWT.ARROW | DWT.RIGHT);
-	char[] yearTxt = Integer.toString(cd.year + 1);
-	nextYear.setBounds(width - CHAIN_BUTTON_SIZE - 10,
-			   y + 10,
-			   CHAIN_BUTTON_SIZE,
-			   CHAIN_BUTTON_SIZE);
-	gc.setFont(getFont(FONT_SIZE_2, DWT.NONE));
-	gc.drawText(yearTxt,
-		    width - CHAIN_BUTTON_SIZE - 10 - 10 - gc.stringExtent(yearTxt).x,
-		    y + 12,
-		    true);
-	nextYear.setData(new Data("increment", "+1"));
-	addChainYearListener(nextYear,
-			     start,
-			     canvas);
-    }
-
     // Draw start if chain starts given year.
-    int dayOffset = 0;
-    if(start.year == cd.year)
-	dayOffset = Integer.toInt(dateFormat("%j", start));
+    int dayOffset = 1;
+    if(cd.start.year == cd.year)
+	dayOffset = Integer.toInt(dateFormat("%j", cd.start)) - 1;
 
     int daysInYear = (new Gregorian).getDaysInYear(cd.year, Gregorian.AD_ERA);
+    Date date;
+    for(int i = dayOffset; i < daysInYear; i++)
+    {
+	date = yearDayToDate(i, cd.year);
 
-//     for(int i = 1 + dayOffset; i <= daysInYear; i++)
-//     {
-	
-//     }
+	// Stop at current month for current year.
+	if((today.year == cd.year) &&
+	   (today.month < date.month))
+	    break;
+
+	Stdout("date", cd.year, i, date.day, date.month, date.year).newline;
+    }
 
     // Draw current month as the last month.
 }
@@ -307,7 +307,10 @@ private void addChainPaintListener(Canvas canvas)
 	}
 	public void paintControl(PaintEvent event)
         {
-	    foreach(child; this.cs.getChildren) child.dispose;
+// 	    Data data = cast(Data)this.cs.getData;
+// 	    if(data && ("1" == data.get("locked"))) return;
+
+	    Stdout("PAINT CONTROL").newline;
 
 	    Rectangle rect = (cast(Canvas)event.widget).getBounds;
 	    GC gc = event.gc;
@@ -318,16 +321,15 @@ private void addChainPaintListener(Canvas canvas)
 	    int cx = 0;
 	    int cy = 0;
 
-	    Date start = Storage.getChainStartDate(cd.id);
 //	    int[] chainYears = Storage.getChainDates(this.id, today.year);
 //	    int[] chainDates = Storage.getChainDates(this.id, 2009);
 
 	    // Draw this year's chains.
 //	    if(0 < chainDates.length)
 //	    cd.year = 2009;
-	    drawChainYear(start, this.cs);
+//	    drawChainYear(start, this.cs);
 
-//  	    drawChainYear(start, 2008, canvas);
+  	    drawChainYear(this.cs);
 
 	    return;
 
@@ -336,7 +338,7 @@ private void addChainPaintListener(Canvas canvas)
 
 	    // Draw beginning of chain to the end.
 	    // Draw month's name.
-	    char[] monthName = dateFormat("%B", start);
+	    char[] monthName = dateFormat("%B", cd.start);
 	    Font font = getFont(FONT_SIZE_3, DWT.NONE);
 // 	    Font font = new Font(Display.getCurrent,
 // 				 new FontData(FONT_FACE_1,
@@ -370,8 +372,6 @@ private void addChainPaintListener(Canvas canvas)
 		gc.drawText(dayNames[i], xPos, yPos, true);
 		cx += width;
 	    }
-
-
 
 // 	    int dayDiff = Integer.toInt(dateFormat("%j", today)) - Integer.toInt(dateFormat("%j", start)) + 1;
 // 	    Stdout("day diff", dayDiff).newline;
@@ -490,6 +490,7 @@ private void addLockMenuOption(Text text)
 void drawChainWindow(int id)
 {
     cd.id = id;
+    cd.start = Storage.getChainStartDate(cd.id);
     cd.year = today.year;
 
     // Retrieve right composite.
@@ -539,5 +540,6 @@ void drawChainWindow(int id)
     rightGroup.layout;
 
     addChainPaintListener(canvas);
-    addChainMouseListener(canvas);
+    addChainClickListener(canvas);
+    addChainScrollListener(canvas);
 }

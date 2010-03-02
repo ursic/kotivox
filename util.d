@@ -413,3 +413,33 @@ Date dateStrToDate(char[] dateStr)
     date.day = Integer.toInt(dateStr[6..$]);
     return date;
 }
+
+
+/*
+  Return date given day of year and year.
+ */
+Date yearDayToDate(int yearDay, int year)
+{
+    int secondsInYear = 31556926;
+    int secondsInDay = 86400;
+
+    char[11] dateStr;
+    char* dateBuf = toStringz(dateStr);
+    char* format = "%d.%m.%Y";
+    time_t ydSec = (((year - 1970) * secondsInYear) + (secondsInDay * yearDay));
+    static tm* time_str;
+    time_str = localtime(&ydSec);
+    strftime(dateBuf,
+	     dateStr.length,
+	     format,
+	     time_str);
+
+    char[][] nums = Txt.split(fromStringz(dateBuf), ".");
+
+    static Date date;
+    date.day = Integer.toInt(nums[0]);
+    date.month = Integer.toInt(nums[1]);
+    date.year = Integer.toInt(nums[2]);
+
+    return date;
+}
