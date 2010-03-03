@@ -420,20 +420,27 @@ Date dateStrToDate(char[] dateStr)
  */
 Date yearDayToDate(int yearDay, int year)
 {
-    int secondsInYear = 31556926;
     int secondsInDay = 86400;
 
+    static tm timeinfo;
+    static tm* timeinfop;
+    static time_t elapsed;
+    timeinfo.tm_year = year - 1900;
+    timeinfo.tm_mday = 1;
+    timeinfo.tm_mon = 0;
+    timeinfo.tm_hour = 1;
+    elapsed = mktime(&timeinfo);
+    elapsed += (secondsInDay * yearDay) - secondsInDay;
+	
     char[11] dateStr;
     char* dateBuf = toStringz(dateStr);
     char* format = "%d.%m.%Y";
-    time_t ydSec = (((year - 1970) * secondsInYear) + (secondsInDay * yearDay));
-    static tm* time_str;
-    time_str = localtime(&ydSec);
+    timeinfop = localtime(&elapsed);
     strftime(dateBuf,
 	     dateStr.length,
 	     format,
-	     time_str);
-
+	     timeinfop);
+    
     char[][] nums = Txt.split(fromStringz(dateBuf), ".");
 
     static Date date;

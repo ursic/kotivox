@@ -42,7 +42,6 @@ public import dwt.events.MenuDetectListener;
 public import dwt.events.MenuDetectEvent;
 public import dwt.events.MouseEvent;
 public import dwt.events.MouseAdapter;
-public import dwt.events.MouseWheelListener;
 public import dwt.events.MenuDetectEvent;
 public import dwt.custom.ExtendedModifyEvent;
 public import dwt.custom.ExtendedModifyListener;
