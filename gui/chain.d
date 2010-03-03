@@ -16,6 +16,7 @@ private struct ChainData
     int id;
     Date start;
     int year;
+    int todayOrigin = -1;
 }
 private ChainData cd;
 
@@ -47,26 +48,56 @@ private int[] strokeRight(int x, int y, int width, int height)
 }
 
 
-private void drawDate(GC gc, char[] str, int x, int y, int width, int height, bool center = true)
+private bool isToday(Date date)
 {
-    
-    int fontSize = width / 2;
+    return ((today.year == date.year) &&
+	    (today.month == date.month) &&
+	    (today.day == date.day));
+}
 
+
+/*
+  Draws date number in a rectangle.
+ */
+private void drawDate(GC gc,
+		      Date date,
+		      int x,
+		      int y,
+		      int width,
+		      int height,
+		      bool center = true)
+{
+    int fontSize = width / 2;
     if(!center) fontSize = width / 6;
 
-    Font font = new Font(Display.getCurrent,
-			 new FontData("Sans", fontSize, DWT.NONE));
-    gc.setFont(font);
+    int style = DWT.NONE;
 
-    Point extent = gc.stringExtent(str);
+    // Draw Sundays in red.
+    if(0 == Integer.toInt(dateFormat("%w", date)))
+	gc.setForeground(Display.getCurrent.getSystemColor(DWT.COLOR_RED));
+
+    // Mark today's day.
+    if(isToday(date))
+    {
+	style = DWT.BOLD | DWT.UNDERLINE_SINGLE;
+	gc.setForeground(Display.getCurrent.getSystemColor(DWT.COLOR_BLUE));
+    }
+
+    gc.setFont(getFont(fontSize, style));
+
+    char[] dateStr = Txt.stripl(Integer.toString(date.day), '0');
+
+    Point extent = gc.stringExtent(dateStr);
     int yPos = y + cast(int)round(height / 2) - cast(int)round(extent.y / 2);
 
     if(!center) yPos = y - cast(int)round(height * 0.01);
 
-    gc.drawText(str,
+    gc.drawText(dateStr,
 		x + cast(int)round(width / 2) - cast(int)round(extent.x / 2),
 		yPos,
 		true);
+
+    gc.setForeground(Display.getCurrent.getSystemColor(DWT.COLOR_BLACK));
 }
 
 
@@ -119,13 +150,13 @@ private class Day
 
     private void mark(GC gc)
     {
-	drawDate(gc,
-		 Integer.toString(this.date),
-		 this.x,
-		 this.y,
-		 this.width,
-		 this.height,
-		 false);
+// 	drawDate(gc,
+// 		 Integer.toString(this.date),
+// 		 this.x,
+// 		 this.y,
+// 		 this.width,
+// 		 this.height,
+// 		 false);
 	gc.fillPolygon(strokeLeft(this.x, this.y, this.width, this.height));
 	gc.fillPolygon(strokeRight(this.x, this.y, this.width, this.height));
 	this.marked = true;
@@ -133,13 +164,13 @@ private class Day
 
     private void unmark(GC gc)
     {
-	drawDate(gc,
-		 Integer.toString(this.date),
-		 this.x,
-		 this.y,
-		 this.width,
-		 this.height);
-	this.marked = false;
+// 	drawDate(gc,
+// 		 Integer.toString(this.date),
+// 		 this.x,
+// 		 this.y,
+// 		 this.width,
+// 		 this.height);
+// 	this.marked = false;
     }
 }
 
@@ -241,6 +272,7 @@ private void addChainScrollListener(Canvas canvas)
 	    if(cd.year < cd.start.year) cd.year = cd.start.year;
 	    if(today.year < cd.year) cd.year = today.year;
 
+	    cd.todayOrigin = -1;
 	    drawChainYear(this.cs);
 	}
     });
@@ -252,7 +284,7 @@ private void addChainScrollListener(Canvas canvas)
  */
 private void drawChainYear(Canvas canvas)
 {
-//    Stdout("DRAW CHAIN YEAR").newline;
+    Stdout("DRAW CHAIN YEAR").newline;
 
     GC gc = new GC(canvas);
     canvas.drawBackground(gc, 0, 0, canvas.getSize.x, canvas.getSize.y);
@@ -312,6 +344,11 @@ private void drawChainYear(Canvas canvas)
 	// Draw month name and day names at the beginning of each month.
 	if((dayOffset == i) || (1 == date.day))
 	{
+	    // Set scroll point to beginning of current month.
+	    if((today.year == date.year) &&
+	       (today.month == date.month))
+		if(-1 == cd.todayOrigin) cd.todayOrigin = marginTop - 30;
+
 	    char[] monthName = dateFormat("%B", date);
 
 	    gc.setFont(getFont(FONT_SIZE_3, DWT.NONE));
@@ -364,6 +401,8 @@ private void drawChainYear(Canvas canvas)
 
 	yDayr = marginTop - 40;
 	gc.drawRectangle(xDayr, yDayr, width, height);
+
+	drawDate(gc, date, xDayr, yDayr, width, height);
     }
 
     (cast(GridData)canvas.getLayoutData).heightHint = marginTop + 200;
@@ -372,7 +411,11 @@ private void drawChainYear(Canvas canvas)
     ScrolledComposite sc = cast(ScrolledComposite)c.getParent;
     sc.setMinSize(c.computeSize(DWT.DEFAULT, DWT.DEFAULT));
 
-    // Draw current month as the last month.
+    if(0 < cd.todayOrigin)
+    {
+	sc.setOrigin(0, cd.todayOrigin);
+	cd.todayOrigin = 0;
+    }
 }
 
 
@@ -390,8 +433,6 @@ private void addChainPaintListener(Canvas canvas)
 	}
 	public void paintControl(PaintEvent event)
         {
-//	    Stdout("PAINT CONTROL").newline;
-
 	    Rectangle rect = (cast(Canvas)event.widget).getBounds;
 	    GC gc = event.gc;
 	    gc.setBackground(event.display.getSystemColor(DWT.COLOR_RED));
