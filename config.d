@@ -112,6 +112,7 @@ public const int CHAIN_LOCK_BUTTON_WIDTH = 30;
 public const char[] CHAIN_LOCK_TEXT = "LOCK";
 public const char[] CHAIN_UNLOCK_TEXT = "UNLOCK";
 public const int CHAIN_DESCRIPTION_LENGTH = 200;
+public const char[] LEFT_GROUP = "leftGroup";
 public const char[] RIGHT_GROUP = "rightGroup";
 public const int CHAIN_DESCRIPTION_INPUT_HEIGHT = 100;
 public const int CHAIN_BUTTON_SIZE = 26;

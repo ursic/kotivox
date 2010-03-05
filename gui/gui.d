@@ -24,10 +24,9 @@ module gui.gui;
 import tango.core.Exception;
 import tango.core.Array;
 import tango.time.chrono.Gregorian;
+import tango.io.Stdout;
 
 import dwt.widgets.Caret;
-
-import tango.io.Stdout;
 
 import gui.chain;
 import util;
@@ -38,13 +37,14 @@ import storage;
 
 /*
   Menu option.
- */
+*/
 private struct MenuOption
 {
-    int style = DWT.NONE;
     char[] id;
-    char[] text;
     int index = -1;
+    char[] text;
+    int style = DWT.NONE;
+    bool show = true;
 }
 
 
@@ -58,12 +58,15 @@ public class GUI
 
     private char errorMsg[];
 
-    static private char[][char[]] authValues;
+    private static char[][char[]] authValues;
 
     private const char[] SEPARATOR1_ID = "-1";
     private const char[] SEPARATOR2_ID = "-2";
     private const char[] TIMESTAMP_ID = "-3";
     private const char[] CLEAR_ID = "-4";
+
+    private static StyledText tp;
+    private static MenuOption[] menuOptions;
 
 
     public this()
@@ -78,6 +81,26 @@ public class GUI
 	this.gridDataMarginHeight = LOGIN_WINDOW_MARGIN_TOP;
 	this.gridDataMarginWidth = LOGIN_WINDOW_MARGIN_LEFT;
     }
+
+
+    /*
+      Return copy of text pad menu.
+     */
+//     private Menu copyMenu()
+//     {
+// 	Menu menu = new Menu(getTextPad);
+// 	if(!this.textPadMenu) this.textPadMenu = new Menu(getTextPad);
+// 	foreach(item; this.textPadMenu.getItems)
+// 	{
+// 	    static MenuOption option;
+// 	    option.id = (cast(Data)item.getData).get("id");
+// 	    option.index = menu.indexOf(item);
+// 	    option.text = item.getText;
+// 	    option.style = item.style;
+// 	    addMenuOption(option);
+// 	}
+// 	return menu;
+//     }
 
 
     private void setWindowSizeSettings(Shell shell)
@@ -298,38 +321,73 @@ public class GUI
     }
 
 
-    private void addMenuOption(MenuOption option, StyledText textPad)
+    private void addMenuOption(MenuOption option)
     {
-	Menu menu = textPad.getMenu;
-	removeMenuOption(menu, option);
-	MenuItem item;
-	if(-1 == option.index)
-	    item = new MenuItem(menu, option.style);
-	else
-	    item = new MenuItem(menu, option.style, option.index);
-	item.setData(new Data("id", option.id));
-	if(0 < option.text.length) item.setText(option.text);
-	addMenuItemListener(item, menu, textPad);
+	removeMenuOption(option);
+	menuOptions ~= option;
+	updateMenu;
     }
 
 
-    private void removeMenuOption(Menu menu, MenuOption option)
+    private void removeMenuOption(MenuOption option)
     {
-	foreach(item; menu.getItems)
+	MenuOption[] options;
+	foreach(opt; menuOptions)
 	{
-	    Data itemData = cast(Data)item.getData;
-	    if(option.id == itemData.get("id"))
-		item.dispose;
+	    if(opt.id == option.id)
+		continue;
+	    options ~= opt;
+	}
+
+	menuOptions = options;
+	updateMenu;
+    }
+
+
+    /*
+      Populate text pad menu with stored options.
+     */
+    private void updateMenu()
+    {
+	Menu menu = getTextPad.getMenu;
+	foreach(item; menu.getItems) item.dispose;
+	MenuItem item;
+	foreach(option; menuOptions)
+	{
+	    if(!option.show) continue;
+
+	    if(-1 == option.index)
+		item = new MenuItem(menu, option.style);
+	    else
+		item = new MenuItem(menu, option.style, option.index);
+	    item.setData(new Data("id", option.id));
+	    if(0 < option.text.length) item.setText(option.text);
+	    addMenuItemListener(item);
 	}
     }
 
 
-    private void addTimestampMenu(StyledText txtPad)
+    private void categoryOptions(bool show = true)
+    {
+	MenuOption[] mo;
+	foreach(option; menuOptions)
+	{
+	    if(option.id != TIMESTAMP_ID)
+		if(show) option.show = true;
+		else option.show = false;
+	    mo ~= option;
+	}
+	menuOptions = mo;
+    }
+
+
+    private void addTimestampMenu()
     {
 	static MenuOption timestamp = {id:TIMESTAMP_ID};
 	timestamp.text = "(" ~ util.timestamp ~ ")";
-	txtPad.setMenu(new Menu(txtPad));
-	addMenuOption(timestamp, txtPad);
+	getTextPad.setMenu(new Menu(getTextPad));
+	categoryOptions(false);
+	addMenuOption(timestamp);
     }
 
 
@@ -630,7 +688,7 @@ public class GUI
     }
 
 
-    private void addCalendarListener(DateTime calendar, StyledText textPad)
+    private void addCalendarListener(DateTime calendar)
     {
 	calendar.addSelectionListener(new class(calendar) SelectionAdapter
         {
@@ -639,12 +697,14 @@ public class GUI
 	    Menu textMenu;
 	    this(DateTime cal)
 	    {
+		this.txtPad = getTextPad;
 		this.cal = calendar;
-		this.txtPad = textPad;
 		this.textMenu = this.txtPad.getMenu;
 	    }
-	    public void widgetSelected(SelectionEvent e)
+	    public void widgetSelected(SelectionEvent event)
 	    {
+		if(this.txtPad.isDisposed) this.txtPad = getTextPad;
+
 		markCalendarDays(this.cal);
 
 		char[] date = Integer.toString(this.cal.getDay) ~ "-";
@@ -661,7 +721,7 @@ public class GUI
 		if(todayStr == date)
 		{
 		    this.txtPad.setEditable(true);
-		    this.txtPad.setMenu(this.textMenu);
+		    this.txtPad.setMenu(getTextPad.getMenu);
 		}
 		else
 		{
@@ -679,8 +739,10 @@ public class GUI
     }
 
 
-    // Let new text take on colors of immediately preceding
-    // or succeeding text.
+    /*
+      Let new text take on colors of immediately preceding
+      or succeeding text.
+    */
     private void addTextPadExtendedModifyListener(StyledText text)
     {
 	text.addExtendedModifyListener(new class(text) ExtendedModifyListener
@@ -850,11 +912,13 @@ public class GUI
 	    DateTime calendar;
 	    this(StyledText t, DateTime d)
 	    {
-		this.txtPad = text;
+		this.txtPad = getTextPad;
 		this.calendar = cal;
 	    }
 	    public void keyPressed(KeyEvent event)
 	    {
+//		if(this.txtPad.isDisposed) this.txtPad = getTextPad;
+
 		// Save encrypted text to file when "CTRL + S" pressed
 		if(this.txtPad.getEditable &&
 		   ((event.stateMask == DWT.CTRL) && (event.keyCode == KEY_S)))
@@ -927,7 +991,7 @@ public class GUI
 		    }
 		    else
 		    {
-			addTimestampMenu(this.txtPad);
+			addTimestampMenu;
 			return;
 		    }
 		}
@@ -939,16 +1003,18 @@ public class GUI
 		// Selection is past character count.
 		if(this.txtPad.getCharCount <= start)
 		{
-		    addTimestampMenu(this.txtPad);
+		    addTimestampMenu;
 		    return;
 		}
 
 		// No selection and no style underneath cursor - hide menu.
 		if((length <= 0) && !this.txtPad.getStyleRangeAtOffset(start))
 		{
-		    addTimestampMenu(this.txtPad);
+		    addTimestampMenu;
 		    return;
 		}
+
+		categoryOptions;
 
 		// No selection, but style underneath cursor - show menu.
 		if((length <= 0) && this.txtPad.getStyleRangeAtOffset(start))
@@ -1009,21 +1075,26 @@ public class GUI
     }
 
 
-    private void addTextMenuListener(StyledText text)
+    private void addTextMenuListener()
     {
-	Menu menu = text.getMenu;
-	menu.addMenuListener(new class(text) MenuAdapter
+	Menu menu = getTextPad.getMenu;
+	menu.addMenuListener(new class() MenuAdapter
         {
 	    Menu txtPadMenu;
 	    StyledText txtPad;
-	    this(StyledText t)
+	    this()
 	    {
-		this.txtPad = text;
+		this.txtPad = getTextPad;
 		this.txtPadMenu = this.txtPad.getMenu;
 	    }
-
 	    public void menuShown(MenuEvent event)
 	    {
+		if(this.txtPad.isDisposed)
+		{
+		    this.txtPad = getTextPad;
+		    this.txtPadMenu = this.txtPad.getMenu;
+		}
+
 		Point selection = this.txtPad.getSelection;
 		int start = selection.x;
 		int length = selection.y - selection.x;
@@ -1046,18 +1117,18 @@ public class GUI
 		StyleRange style = this.txtPad.getStyleRangeAtOffset(lineBegin);
 		if((length <= 0) && style)
 		{
-		    addMenuOption(separator1, this.txtPad);
-		    addMenuOption(timestamp, this.txtPad);
-		    addMenuOption(separator2, this.txtPad);
-		    addMenuOption(clear, this.txtPad);
+		    addMenuOption(separator1);
+		    addMenuOption(timestamp);
+		    addMenuOption(separator2);
+		    addMenuOption(clear);
 		}
 		// Remove separator and option to remove style from paragraph.
 		else
 		{
-		    removeMenuOption(this.txtPadMenu, separator1);
-		    removeMenuOption(this.txtPadMenu, timestamp);
-		    removeMenuOption(this.txtPadMenu, separator2);
-		    removeMenuOption(this.txtPadMenu, clear);
+		    removeMenuOption(separator1);
+		    removeMenuOption(timestamp);
+		    removeMenuOption(separator2);
+		    removeMenuOption(clear);
 		}
 		this.txtPad.setMenu(this.txtPadMenu);
 	    }
@@ -1065,18 +1136,18 @@ public class GUI
     }
 
 
-    private void addMenuItemListener(MenuItem menuItem, Menu menu, StyledText text)
+    private void addMenuItemListener(MenuItem menuItem)
     {
-	menuItem.addSelectionListener(new class(menuItem, menu, text) SelectionAdapter
+	menuItem.addSelectionListener(new class(menuItem) SelectionAdapter
         {
 	    MenuItem item;
 	    Menu txtPadMenu;
 	    StyledText txtPad;
-	    this(MenuItem mi, Menu m, StyledText t)
+	    this(MenuItem mi)
 	    {
 		this.item = menuItem;
-		this.txtPadMenu = menu;
-		this.txtPad = text;
+		this.txtPadMenu = getTextPad.getMenu;
+		this.txtPad = getTextPad;
 	    }
 
 	    public void widgetSelected(SelectionEvent event)
@@ -1093,8 +1164,7 @@ public class GUI
 		    int titlePos = clearStyle(this.txtPad,
 					      this.txtPad.getCaretLine,
 					      this.txtPad.getOffsetAtLine(lineAtOffset));
-		    if(-1 == titlePos)
-			titlePos = 0;
+		    if(-1 == titlePos) titlePos = 0;
 		    
 		    // Remove category names - paragraph title.
 		    int length = this.txtPad.getLine(titlePos).length;
@@ -1281,13 +1351,11 @@ public class GUI
 
     private void addTextSearchKeyListener(Composite rightComposite,
 					  Text textSearch,
-					  StyledText textPad,
 					  Composite catEditList,
 					  DateTime calendar)
     {
 	textSearch.addKeyListener(new class(rightComposite,
 					    textSearch,
-					    textPad,
 					    catEditList,
 					    calendar) KeyListener
 	{
@@ -1296,16 +1364,18 @@ public class GUI
 	    StyledText txtPad;
 	    Composite catList;
 	    DateTime cal;
-	    this(Composite c, Text t, StyledText s, Composite cl, DateTime dt)
+	    this(Composite c, Text t, Composite cl, DateTime dt)
 	    {
 		this._rightComposite = rightComposite;
 		this.txtSearch = textSearch;
-		this.txtPad = textPad;
+		this.txtPad = getTextPad;
 		this.catList = catEditList;
 		this.cal = calendar;
 	    }
 	    public void keyPressed(KeyEvent event)
 	    {
+		if(this.txtPad.isDisposed) this.txtPad = getTextPad;
+
 		if((event.keyCode == KEY_ENTER) || (event.keyCode == KEY_KP_ENTER))
 		{
 		    // Save current text so it becomes searchable,
@@ -1326,21 +1396,23 @@ public class GUI
     }
 
 
-    private void addTodayButtonListener(Button button, DateTime calendar, StyledText text)
+    private void addTodayButtonListener(Button button, DateTime calendar)
     {
-	button.addSelectionListener(new class(calendar, text) SelectionAdapter
+	button.addSelectionListener(new class(calendar) SelectionAdapter
 	{
 	    DateTime cal;
 	    StyledText txtPad;
-	    this(DateTime d, StyledText s)
+	    this(DateTime d)
 	    {
 		this.cal = calendar;
-		this.txtPad = text;
+		this.txtPad = getTextPad;
 	    }
 	    // Doing it the long way, because setDate of DateTime
 	    // calls DateTime Selection listener twice for some reason.
 	    public void widgetSelected(SelectionEvent event)
 	    {
+		if(this.txtPad.isDisposed) this.txtPad = getTextPad;
+
 		this.cal.setDay(1);
 		this.cal.setYear(today.year);
 		this.cal.setMonth(today.month - 1);
@@ -1382,19 +1454,21 @@ public class GUI
     /*
       Store current text when focused on note.
      */
-    private void addNoteMouseListener(Text noteText, StyledText textPad)
+    private void addNoteMouseListener(Text noteText)
     {
-	noteText.addMouseListener(new class(noteText, textPad) MouseAdapter
+	noteText.addMouseListener(new class(noteText) MouseAdapter
         {
 	    Text noteTxt;
 	    StyledText txtPad;
-	    this(Text t, StyledText st)
+	    this(Text t)
             {
 		this.noteTxt = noteText;
-		this.txtPad = textPad;
+		this.txtPad = getTextPad;
 	    }
 	    public void mouseDown(MouseEvent event)
 	    {
+		if(this.txtPad.isDisposed) this.txtPad = getTextPad;
+
 		hideSearchChildren(this.txtPad.getParent);
 		saveText(this.txtPad);
 		char[] noteID = (cast(Data)this.noteTxt.getData).get("id");
@@ -1409,7 +1483,7 @@ public class GUI
     }
 
     /*
-      Draw text pad on the right.
+      Draw text pad on the right and return it.
     */
     private StyledText drawTextPad(Composite rightComposite)
     {
@@ -1426,6 +1500,36 @@ public class GUI
 	textPad.setScrollBarVisible(textPad.getVerticalBar, false);
 	textPad.setScrollBarVisible(textPad.getHorizontalBar, false);
 	return textPad;
+    }
+
+    /*
+      Return text pad.
+    */
+    private StyledText getTextPad()
+    {
+	foreach(child; getShellGroup(RIGHT_GROUP).getChildren)
+	    if("StyledText" == child.getName)
+	    {
+		this.tp = cast(StyledText)child;
+		break;
+	    }
+
+	DateTime calendar;
+	foreach(child; getShellGroup(LEFT_GROUP).getChildren)
+	{
+	    if("DateTime" == child.getName) calendar = cast(DateTime)child;
+	    break;
+	}
+
+	if(!this.tp || (this.tp && this.tp.isDisposed))
+	{
+	    this.tp = drawTextPad(getShellGroup(RIGHT_GROUP));
+	    this.tp.setMenu(new Menu(this.tp));
+	    updateMenu;
+	    addTextPadListeners(this.tp, calendar);
+	}
+
+	return this.tp;
     }
 
     /*
@@ -1534,7 +1638,7 @@ public class GUI
 	    static MenuOption catItem;
 	    catItem.id = id;
 	    catItem.text = name;
-	    addMenuOption(catItem, textPad);
+	    addMenuOption(catItem);
  	}
 
 	ScrolledComposite sc = cast(ScrolledComposite)catEditList.getParent;
@@ -1628,7 +1732,7 @@ public class GUI
 		    static MenuOption catItem = {text:NEW_CATEGORY_TEXT,
 						 index:0};
 		    catItem.id = id;
-		    addMenuOption(catItem, this.txtPad);
+		    addMenuOption(catItem);
 		}
 
 		// Redraw parent container.
@@ -1703,7 +1807,7 @@ public class GUI
 	    // Prevent default menu.
 	    noteText.setMenu(new Menu(noteText));
 	    addNoteNameModifyListener(noteText);
-	    addNoteMouseListener(noteText, textPad);
+	    addNoteMouseListener(noteText);
 	}
 
 	ScrolledComposite scn = cast(ScrolledComposite)noteEditList.getParent;
@@ -1766,7 +1870,7 @@ public class GUI
 		    noteText.setMenu(new Menu(noteText));
 		    Storage.noteContent(Integer.toInt(id), name);
 		    addNoteNameModifyListener(noteText);
-		    addNoteMouseListener(noteText, this.txtPad);
+		    addNoteMouseListener(noteText);
 		}
 
 		// Redraw parent container.
@@ -1853,7 +1957,13 @@ public class GUI
 	    }
 	    public void mouseDown(MouseEvent event)
 	    {
+		saveText(getTextPad);
 		drawChainWindow(Integer.toInt((cast(Data)this.chainTxt.getData).get("id")));
+	    }
+	    // Canvas seems to steal focus.
+	    public void mouseUp(MouseEvent event)
+	    {
+		    this.chainTxt.setFocus;
 	    }
 	});
     }
@@ -1989,6 +2099,18 @@ public class GUI
     }
 
 
+    /*
+      Wrapper for text pad listeners.
+     */
+    private void addTextPadListeners(StyledText textPad, DateTime calendar)
+    {
+	addTextPadExtendedModifyListener(textPad);
+	addTextPadKeyListener(textPad, calendar);
+	addTextPadMenuDetectListener(textPad);
+	addTextMenuListener;
+    }
+
+
     private void drawMainWindow(in Shell shell)
     {
 	// Remove elements from login/registration form.
@@ -2006,6 +2128,7 @@ public class GUI
 	Composite leftComposite = new Composite(shell, DWT.NONE);
 	leftComposite.setLayout(leftLayout);
 	leftComposite.setLayoutData(leftCol);
+	leftComposite.setData(new Data("name", LEFT_GROUP));
 
 	// Right column.
 	GridData rightCol = new GridData(DWT.FILL, DWT.FILL, true, true);
@@ -2038,8 +2161,7 @@ public class GUI
 	StyledText textPad = drawTextPad(rightComposite);
 
 	// Right-click / context menu for text area.
-	Menu textPadMenu = new Menu(textPad);
-	textPad.setMenu(textPadMenu);
+	textPad.setMenu(new Menu(textPad));
 
 	// Search field.
 	Text textSearch = drawSearchInput(leftComposite, textPad);
@@ -2086,13 +2208,10 @@ public class GUI
 	    }
 	});
 
-	addCalendarListener(calendar, textPad);
-	addTodayButtonListener(bToday, calendar, textPad);
-	addTextPadExtendedModifyListener(textPad);
-	addTextPadKeyListener(textPad, calendar);
-	addTextPadMenuDetectListener(textPad);
-	addTextMenuListener(textPad);
-	addTextSearchKeyListener(rightComposite, textSearch, textPad, catEditList, calendar);
+	addCalendarListener(calendar);
+	addTodayButtonListener(bToday, calendar);
+	addTextPadListeners(textPad, calendar);
+	addTextSearchKeyListener(rightComposite, textSearch, catEditList, calendar);
 
 	setShellSize(shell);
 	shell.layout;

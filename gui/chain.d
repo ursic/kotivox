@@ -8,8 +8,6 @@ public import gui.util;
 import util;
 import storage;
 
-//import tango.io.Stdout;
-
 
 private struct ChainData
 {

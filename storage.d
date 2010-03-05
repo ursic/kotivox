@@ -35,7 +35,6 @@ import util;
 import auth;
 import crypt;
 
-//import tango.io.Stdout;
 
 private class Day
 {
@@ -47,7 +46,7 @@ private class Day
     // [2] - 0 for normal text, 1 for bold - indicating category title
     private int[][] categoryRanges;
 
-    static private Day[] days;
+    private static Day[] days;
 
     this(char[] name, char[] text)
     {
@@ -58,7 +57,7 @@ private class Day
     /*
       Decrypt user days.
      */
-    static private void loadDays()
+    private static void loadDays()
     {
 	// Gather all day files for this user.
 	foreach(file; (new FileScan)(Auth.userDirPath, USER_DAY_FILE_EXTENSION).files)
@@ -69,7 +68,7 @@ private class Day
 	}
     }
 
-    static private bool dayExists(char[] dayName)
+    private static bool dayExists(char[] dayName)
     {
 	foreach(Day d; days)
 	    if(d.name == dayName) return true;
@@ -77,7 +76,7 @@ private class Day
 	return false;
     }
 
-    static private void daySetText(char[] dayName, char[] text)
+    private static void daySetText(char[] dayName, char[] text)
     {
 	if(dayExists(dayName))
 	{
@@ -92,7 +91,7 @@ private class Day
 	    days ~= new Day(dayName, text);
     }
 
-    static private char[] dayGetText(char[] dayName)
+    private static char[] dayGetText(char[] dayName)
     {
 	foreach(Day d; days)
 	    if(d.name == dayName) return d.text;
@@ -100,7 +99,7 @@ private class Day
 	return "";
     }
 
-    static private void setCategoryRanges(char[] dayName, int[][] ranges)
+    private static void setCategoryRanges(char[] dayName, int[][] ranges)
     {
 	foreach(day; days)
 	    if(dayName == day.name)
@@ -110,7 +109,7 @@ private class Day
 	    }
     }
 
-    static private int[][] getCategoryRanges(char[] dayName)
+    private static int[][] getCategoryRanges(char[] dayName)
     {
 	foreach(day; days)
 	    if(dayName == day.name) return day.categoryRanges;
@@ -124,10 +123,10 @@ private class Category
 {
     private int id;
     private char[] name;
-    static private Category[] categories;
+    private static Category[] categories;
     // Category retrieval counter.
-    static private int catRetrCount = 0;
-    static private char[] origDigest;
+    private static int catRetrCount = 0;
+    private static char[] origDigest;
 
     this(int id, char[] name)
     {
@@ -135,7 +134,7 @@ private class Category
 	this.name = name;
     }
 
-    static private int[] getIds()
+    private static int[] getIds()
     {
 	int[] ids;
 	foreach(c; categories) ids ~= c.id;
@@ -146,7 +145,7 @@ private class Category
       Add new category with name to categories array.
       Return id of added category.
     */
-    static private int addCategory(char[] name)
+    private static int addCategory(char[] name)
     {
 	int id = getFreeSlot(getIds);
 	categories ~= new Category(id, sanitizeStr(name));
@@ -156,7 +155,7 @@ private class Category
     /*
       Removes category of given id from categories array.
     */
-    static private void removeCategory(int id)
+    private static void removeCategory(int id)
     {
 	Category new_categories[];
 	foreach(Category category; categories)
@@ -167,7 +166,7 @@ private class Category
 	categories = new_categories;
     }
 
-    static private void renameCategory(int id, char[] name)
+    private static void renameCategory(int id, char[] name)
     {
 	foreach(Category c; categories)
 	{
@@ -182,7 +181,7 @@ private class Category
     /*
       Encrypt categories into file.
      */
-    static private void saveCategories()
+    private static void saveCategories()
     {
 	char[] content;
 	foreach(Category c; categories)
@@ -217,7 +216,7 @@ private class Category
     /*
       Decrypt user categories.
      */
-    static private void loadCategories()
+    private static void loadCategories()
     {
 	// Does categories file exist?
 	char[] filename = Auth.userDirPath ~ USER_CATEGORIES_FILE;
@@ -237,7 +236,7 @@ private class Category
     /*
       Return name of category with id.
      */
-    static private char[] getCategoryName(int id)
+    private static char[] getCategoryName(int id)
     {
 	foreach(Category c; categories)
 	    if(c.id == id) return c.name;
@@ -248,7 +247,7 @@ private class Category
     /*
       Return ID of category with name.
      */
-    static private int getCategoryID(char[] name)
+    private static int getCategoryID(char[] name)
     {
 	foreach(Category c; categories)
 	    if(Unicode.toLower(c.name) == Unicode.toLower(Txt.trim(name))) return c.id;
@@ -260,7 +259,7 @@ private class Category
       Return associative array with category id as key
       and category name as value.
      */
-    static private char[][] getCategory()
+    private static char[][] getCategory()
     {
 	if(0 == catRetrCount)
 	{
@@ -283,7 +282,7 @@ private class Category
     /*
       Return complement category IDs.
      */
-    static private int[] invCategoryIDs(int[] selCategories)
+    private static int[] invCategoryIDs(int[] selCategories)
     {
 	int[] invCategories;
 	foreach(c; categories)
@@ -415,7 +414,7 @@ private class SearchResultPage
 
       Always return matches inside non-categorized text.
      */
-    static private bool compileSearchResults(char[] keywordStr, int[] categories)
+    private static bool compileSearchResults(char[] keywordStr, int[] categories)
     {
 	// Clear previous search.
 	resultPages = null;
@@ -504,7 +503,7 @@ private class SearchResultPage
 	return true;
     }
 
-    static private char[] getPager(int currentPage)
+    private static char[] getPager(int currentPage)
     {
 	if(resultPages.length < 2) return "";
 
@@ -533,7 +532,7 @@ private class Note
     private char[] content;
     private char[] origDigest;
 
-    static private Note[] notes;
+    private static Note[] notes;
 
     this(char[] name, char[] filename = "", char[] content = "")
     {
@@ -546,7 +545,7 @@ private class Note
 	this.origDigest = digest(this.content);
     }
 
-    static private int add()
+    private static int add()
     {
 	int id = getFreeSlot(getIds);
 	notes ~= new Note(NOTES_TEXT ~ " " ~ Integer.toString(id + 1));
@@ -556,7 +555,7 @@ private class Note
     /*
       Removes note of given id from notes array.
     */
-    static private void remove(int id)
+    private static void remove(int id)
     {
 	Note new_notes[];
 	foreach(note; notes)
@@ -568,7 +567,7 @@ private class Note
     }
 
     // Return note name.
-    static private char[] noteName(int id)
+    private static char[] noteName(int id)
     {
 	foreach(note; notes)
 	    if(note.id == id) return note.name;
@@ -577,7 +576,7 @@ private class Note
     }
 
     // Set note name.
-    static private void noteName(int id, char[] name)
+    private static void noteName(int id, char[] name)
     {
 	foreach(note; notes)
 	{
@@ -589,7 +588,7 @@ private class Note
 	}
     }
 
-    static private void noteContent(int id, char[] content)
+    private static void noteContent(int id, char[] content)
     {
 	foreach(n; notes)
 	{
@@ -601,14 +600,14 @@ private class Note
 	}
     }
 
-    static private char[] noteContent(int id)
+    private static char[] noteContent(int id)
     {
 	foreach(n; notes)
 	    if(n.id == id) return n.content;
 	return "";
     }
 
-    static private int[] getIds()
+    private static int[] getIds()
     {
 	int[] ids;
 	foreach(n; notes) ids ~= n.id;
@@ -618,7 +617,7 @@ private class Note
     /*
       Encrypt notes into files.
      */
-    static private void saveNotes()
+    private static void saveNotes()
     {
 	char[] noteFiles;
 	foreach(note; notes)
@@ -660,7 +659,7 @@ private class Note
     /*
       Decrypt notes from files.
      */
-    static private void loadNotes()
+    private static void loadNotes()
     {
 	foreach(file; (new FileScan)(Auth.userDirPath, NOTE_FILE_EXTENSION).files)
 	{
@@ -682,7 +681,7 @@ private class Note
 	}
     }
     
-    static private char[][int] getNotes()
+    private static char[][int] getNotes()
     {
 	char[][int] noteList;
 	foreach(note; notes) noteList[note.id] = note.name;
@@ -720,7 +719,7 @@ private class Chain
     private bool locked = false;
     private int[] dates;
     private bool changed = false;
-    static private Chain[] chains;
+    private static Chain[] chains;
 
     this(char[] name,
 	 Date startDate = today,
@@ -738,14 +737,14 @@ private class Chain
 	this.dates = dates;
     }
 
-    static private int[] getIds()
+    private static int[] getIds()
     {
 	int[] ids;
 	foreach(n; chains) ids ~= n.id;
 	return ids;
     }
 
-    static private int add()
+    private static int add()
     {
 	int id = getFreeSlot(getIds);
 	chains ~= new Chain(CHAIN_TEXT ~ " " ~ Integer.toString(id + 1));
@@ -753,7 +752,7 @@ private class Chain
 	return id;
     }
 
-    static private void remove(int id)
+    private static void remove(int id)
     {
 	Chain new_chains[];
 	foreach(chain; chains)
@@ -764,14 +763,14 @@ private class Chain
 	chains = new_chains;
     }
 
-    static private char[][int] getChains()
+    private static char[][int] getChains()
     {
 	char[][int] chainlist;
 	foreach(chain; chains) chainlist[chain.id] ~= chain.name;
 	return chainlist;
     }
 
-    static private char[] chainName(int id)
+    private static char[] chainName(int id)
     {
 	foreach(chain; chains)
 	    if(chain.id == id) return chain.name;
@@ -779,7 +778,7 @@ private class Chain
 	return "I CANNOT FIND CHAIN " ~ Integer.toString(id) ~ ".";
     }
 
-    static private void chainName(int id, char[] name)
+    private static void chainName(int id, char[] name)
     {
 	foreach(chain; chains)
 	{
@@ -792,7 +791,7 @@ private class Chain
 	}
     }
 
-    static private char[] chainDesc(int id)
+    private static char[] chainDesc(int id)
     {
 	foreach(chain; chains)
 	    if(chain.id == id) return chain.desc;
@@ -800,7 +799,7 @@ private class Chain
 	return "I CANNOT FIND CHAIN " ~ Integer.toString(id) ~ ".";
     }
 
-    static private void chainDesc(int id, char[] desc)
+    private static void chainDesc(int id, char[] desc)
     {
 	foreach(chain; chains)
 	{
@@ -816,7 +815,7 @@ private class Chain
     /*
       Add date to chain of given id.
      */
-    static private void addDate(int id, int date)
+    private static void addDate(int id, int date)
     {
 	foreach(chain; chains)
 	    if(chain.id == id)
@@ -833,7 +832,7 @@ private class Chain
     /*
       Remove date from chain of given id.
      */
-    static private void removeDate(int id, int date)
+    private static void removeDate(int id, int date)
     {
 	foreach(chain; chains)
 	    if(chain.id == id)
@@ -847,7 +846,7 @@ private class Chain
     /*
       Return start date.
      */
-    static private Date getStartDate(int id)
+    private static Date getStartDate(int id)
     {
 	foreach(chain; chains)
 	    if(chain.id == id) return chain.startDate;
@@ -859,7 +858,7 @@ private class Chain
     /*
       Return marked days.
      */
-    static private int[] getDates(int id, int year)
+    private static int[] getDates(int id, int year)
     {
 	int[] dates;
 	foreach(chain; chains)
@@ -880,7 +879,7 @@ private class Chain
     /*
       Lock chain from editing.
      */
-    static private void lock(int id)
+    private static void lock(int id)
     {
 	foreach(chain; chains)
 	    if(chain.id == id)
@@ -894,7 +893,7 @@ private class Chain
     /*
       Unlock chain for editing.
      */
-    static private void unlock(int id)
+    private static void unlock(int id)
     {
 	foreach(chain; chains)
 	    if(chain.id == id)
@@ -908,7 +907,7 @@ private class Chain
     /*
       Remove date from chain of given id.
      */
-    static private bool isLocked(int id)
+    private static bool isLocked(int id)
     {
 	foreach(chain; chains)
 	    if((chain.id == id) && chain.locked)
@@ -920,7 +919,7 @@ private class Chain
     /*
       Encrypt chains into files.
      */
-    static private void saveChains()
+    private static void saveChains()
     {
 	char[] chainFiles;
 	foreach(chain; chains)
@@ -969,7 +968,7 @@ private class Chain
     /*
       Decrypt chains from files.
      */
-    static private void loadChains()
+    private static void loadChains()
     {
 	foreach(file; (new FileScan)(Auth.userDirPath, CHAIN_FILE_EXTENSION).files)
 	{
@@ -1053,7 +1052,7 @@ public class Storage
     /*
       Encrypt category ranges into file.
      */
-    static private void saveCategoryRanges()
+    private static void saveCategoryRanges()
     {
 	int[][] catRanges = Day.getCategoryRanges(getTodayFileName);
 	char[] catRangesFileName = Auth.userDirPath ~ getTodayFileName ~ USER_CATEGORY_RANGES_FILE_EXTENSION;
@@ -1085,12 +1084,12 @@ public class Storage
     /*
       Decrypt user category ranges.
      */
-    static private void loadCategoryRanges()
+    private static void loadCategoryRanges()
     {
-	// gather all available category ranges
+	// Gather all available category ranges.
 	foreach(file; (new FileScan)(Auth.userDirPath, USER_CATEGORY_RANGES_FILE_EXTENSION).files)
 	{
-	    // decrypt category ranges into array
+	    // Decrypt category ranges into array.
 	    char[] ranges = k_decrypt_to_string(file.path ~ file.file, Auth.cipherKey);
 
 	    int[][] catRanges;

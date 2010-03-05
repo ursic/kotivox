@@ -63,7 +63,6 @@ import Integer = tango.text.convert.Integer;
 
 public import config;
 
-import tango.io.Stdout;
 
 /*
   Per-widget data.
@@ -125,4 +124,24 @@ Color getColor(char[] colorSetting)
 		     colors[0],
 		     colors[1],
 		     colors[2]);
+}
+
+
+/*
+  Return major shell group.
+ */
+Composite getShellGroup(char[] groupName)
+{
+    Shell shell = Display.getCurrent.getShells[0];
+    Composite shellGroup;
+    foreach(child; shell.getChildren)
+    {
+	Data data = cast(Data)child.getData;
+	if(data && (groupName == data.get("name")))
+	{
+	    shellGroup = cast(Composite)child;
+	    break;
+	}
+    }
+    return shellGroup;
 }

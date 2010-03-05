@@ -22,7 +22,6 @@
 module auth;
 
 import tango.io.FilePath;
-import tango.io.Stdout;
 import tango.core.Traits;
 import tango.math.IEEE;
 import tango.io.digest.Sha512;
@@ -37,7 +36,7 @@ import storage;
 private class Validator
 {
     // Check whether given user exists.
-    static private bool usernameExists(char[] username)
+    private static bool usernameExists(char[] username)
     {
 	char[] userDirPath = APP_DIR ~ USER_DIR ~ "/" ~ usernameToIdent(username);
 	FilePath userDir = new FilePath(userDirPath);
@@ -49,7 +48,7 @@ private class Validator
     }
 
 
-    static private bool validateUserData(char[][] userData, out char[] errorMsg)
+    private static bool validateUserData(char[][] userData, out char[] errorMsg)
     {
 	char[] username = userData[0];
 	char[] password1 = userData[1];
@@ -125,10 +124,10 @@ private class Validator
 
 public class Auth
 {
-    static private bool userLoggedIn = false;
-    static private char[] userDirPath;
-    static private char[] userConfig;
-    static private char[] cipherKey;
+    private static bool userLoggedIn = false;
+    private static char[] userDirPath;
+    private static char[] userConfig;
+    private static char[] cipherKey;
 
     static public bool login(char[][] userData, out char[] errorMsg)
     {
@@ -172,14 +171,14 @@ public class Auth
     }
 
 
-    static private char[] passwordToIdent(char[] password)
+    private static char[] passwordToIdent(char[] password)
     {
 	this.cipherKey = digest(password);
 	return digest(password ~ this.cipherKey);
     }
 
 
-    static private void addNewUser(char[][] userData)
+    private static void addNewUser(char[][] userData)
     {
 	char[] ident = usernameToIdent(userData[0]);
 	char[] usersDirPath = APP_DIR ~ USER_DIR;
