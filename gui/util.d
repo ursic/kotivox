@@ -53,6 +53,10 @@ public import dwt.events.FocusListener;
 public import dwt.events.FocusEvent;
 public import dwt.events.PaintListener;
 public import dwt.events.PaintEvent;
+public import dwt.events.ControlListener;
+public import dwt.events.ControlEvent;
+public import dwt.events.TraverseListener;
+public import dwt.events.TraverseEvent;
 
 import Txt = tango.text.Util;
 import Integer = tango.text.convert.Integer;

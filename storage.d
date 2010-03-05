@@ -35,7 +35,7 @@ import util;
 import auth;
 import crypt;
 
-import tango.io.Stdout;
+//import tango.io.Stdout;
 
 private class Day
 {
@@ -735,12 +735,7 @@ private class Chain
 	this.desc = desc;
 	this.locked = locked;
 	this.filename = filename;
-
-	this.startDate.year = 2008;
-	this.startDate.day = 17;
-	this.startDate.month = 1;
-	
-	this.dates = [20080102, 20080203, 20090506, 20090507, 20100210, 20100211, 20100212];
+	this.dates = dates;
     }
 
     static private int[] getIds()
@@ -954,7 +949,6 @@ private class Chain
 	    char[] content = Integer.toString(chain.desc.length);
 	    content ~= "\n" ~ chain.name;
 	    content ~= "\n" ~ dateStr(chain.startDate);
-	    Stdout("chain date", dateStr(chain.startDate)).newline;
 	    int locked = chain.locked ? 1 : 0;
 	    content ~= "\n" ~ Integer.toString(locked);
 	    content ~= "\n" ~ chain.desc;

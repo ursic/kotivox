@@ -384,6 +384,10 @@ Date today()
     date.month = Integer.toInt(nums[1]);
     date.year = Integer.toInt(nums[2]);
 
+//     date.day = Integer.toInt("7");
+//     date.month = Integer.toInt("3");
+//     date.year = Integer.toInt("2010");
+
     return date;
 }
 

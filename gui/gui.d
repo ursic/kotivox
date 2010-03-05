@@ -1408,8 +1408,29 @@ public class GUI
 	});
     }
 
+    /*
+      Draw text pad on the right.
+    */
+    private StyledText drawTextPad(Composite rightComposite)
+    {
+	GridData rightData = new GridData(DWT.FILL, DWT.FILL, true, true);
+	StyledText textPad = new StyledText(rightComposite,
+					    DWT.BORDER | DWT.MULTI | DWT.H_SCROLL | DWT.V_SCROLL);
+	textPad.setFocus;
+	setFont(textPad, FONT_SIZE_1, DWT.NONE);
+	textPad.setText(Storage.getText);
+	textPad.setData(new Data("noteid", "-1"));
+	textPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
+	textPad.setLayoutData(rightData);
+	textPad.setKeyBinding(DWT.MOD1 + 'A', ST.SELECT_ALL);
+	textPad.setScrollBarVisible(textPad.getVerticalBar, false);
+	textPad.setScrollBarVisible(textPad.getHorizontalBar, false);
+	return textPad;
+    }
 
-    // Draw text input for global search.
+    /*
+      Draw text input for global search.
+    */
     private Text drawSearchInput(Composite composite, StyledText textPad)
     {
 	GridData gdSearch = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH - 8, DWT.DEFAULT);
@@ -2014,19 +2035,7 @@ public class GUI
         bToday.setLayoutData(gdButtonToday);
 
 	// Big text field on the right.
-	GridData rightData = new GridData(DWT.FILL, DWT.FILL, true, true);
-	StyledText textPad = new StyledText(rightComposite,
-					    DWT.BORDER | DWT.MULTI | DWT.H_SCROLL | DWT.V_SCROLL);
-	textPad.setFocus;
-	setFont(textPad, FONT_SIZE_1, DWT.NONE);
-	textPad.setText(Storage.getText);
-	textPad.setData(new Data("noteid", "-1"));
-	textPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
- 	textPad.setLayoutData(rightData);
-	textPad.setKeyBinding(DWT.MOD1 + 'A', ST.SELECT_ALL);
- 	textPad.setScrollBarVisible(textPad.getVerticalBar, false);
- 	textPad.setScrollBarVisible(textPad.getHorizontalBar, false);
- 	textPad.layout;
+	StyledText textPad = drawTextPad(rightComposite);
 
 	// Right-click / context menu for text area.
 	Menu textPadMenu = new Menu(textPad);
@@ -2084,7 +2093,6 @@ public class GUI
 	addTextPadMenuDetectListener(textPad);
 	addTextMenuListener(textPad);
 	addTextSearchKeyListener(rightComposite, textSearch, textPad, catEditList, calendar);
-//	addChainSelectionListener(rightComposite);
 
 	setShellSize(shell);
 	shell.layout;

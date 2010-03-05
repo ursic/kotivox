@@ -8,7 +8,7 @@ public import gui.util;
 import util;
 import storage;
 
-import tango.io.Stdout;
+//import tango.io.Stdout;
 
 
 private struct ChainData
@@ -19,7 +19,6 @@ private struct ChainData
     int todayOrigin = -1;
 }
 private ChainData cd;
-
 
 
 // Half thickness of stroke in percent.
@@ -67,6 +66,8 @@ private void drawDate(GC gc,
 		      int height,
 		      bool center = true)
 {
+    gc.drawRectangle(x, y, width, height);
+
     int fontSize = width / 2;
     if(!center) fontSize = width / 6;
 
@@ -79,7 +80,7 @@ private void drawDate(GC gc,
     // Mark today's day.
     if(isToday(date))
     {
-	style = DWT.BOLD | DWT.UNDERLINE_SINGLE;
+	style = DWT.BOLD;
 	gc.setForeground(Display.getCurrent.getSystemColor(DWT.COLOR_BLUE));
     }
 
@@ -103,40 +104,39 @@ private void drawDate(GC gc,
 
 private class Day
 {
+    Date date;
     int x;
     int y;
     int width;
     int height;
-    int date = -1;
     bool marked;
-
     static Day[] days;
 
-    this(int x, int y, int width, int height, int date)
+    this(Date date, int x, int y, int width, int height)
     {
+	this.date = date;
 	this.x = x;
 	this.y = y;
 	this.width = width;
 	this.height = height;
-	this.date = date;
     }
 
-    private static Day add(int x, int y, int width, int height, int date)
+    private static Day add(Date date, int x, int y, int width, int height)
     {
-	Day d = new Day(x, y, width, height, date);
+	Day d = new Day(date, x, y, width, height);
 	Day.days ~= d;
 	return d;
     }
 
     /*
-      Modify existing day.
+      Toggle existing day.
       Add new one if it doesn't exist already.
      */
-    private static Day modify(int x, int y, int width, int height, int date)
+    private static Day toggle(Date date, int x, int y, int width, int height)
     {
 	foreach(day; days)
 	{
-	    if(day.date == date)
+	    if(dateStr(day.date) == dateStr(date))
 	    {
 		day.x = x;
 		day.y = y;
@@ -145,18 +145,18 @@ private class Day
 		return day;
 	    }
 	}
-	return add(x, y, width, height, date);
+	return add(date, x, y, width, height);
     }
 
     private void mark(GC gc)
     {
-// 	drawDate(gc,
-// 		 Integer.toString(this.date),
-// 		 this.x,
-// 		 this.y,
-// 		 this.width,
-// 		 this.height,
-// 		 false);
+	drawDate(gc,
+		 this.date,
+		 this.x,
+		 this.y,
+		 this.width,
+		 this.height,
+		 false);
 	gc.fillPolygon(strokeLeft(this.x, this.y, this.width, this.height));
 	gc.fillPolygon(strokeRight(this.x, this.y, this.width, this.height));
 	this.marked = true;
@@ -164,13 +164,13 @@ private class Day
 
     private void unmark(GC gc)
     {
-// 	drawDate(gc,
-// 		 Integer.toString(this.date),
-// 		 this.x,
-// 		 this.y,
-// 		 this.width,
-// 		 this.height);
-// 	this.marked = false;
+	drawDate(gc,
+		 this.date,
+		 this.x,
+		 this.y,
+		 this.width,
+		 this.height);
+	this.marked = false;
     }
 }
 
@@ -188,15 +188,15 @@ private void addChainClickListener(Canvas canvas)
         {
 	    if(Storage.isChainLocked(cd.id)) return;
 
+	    GC gc = new GC(this.cs);
+	    gc.setBackground(Display.getCurrent.getSystemColor(DWT.COLOR_RED));
+
 	    foreach(day; Day.days)
 	    {
 		int x = day.x;
 		int y = day.y;
 		int width = day.width;
 		int height = day.height;
-		char[] date = Integer.toString(day.date);
-		GC gc = new GC(this.cs);
-		gc.setBackground(event.display.getSystemColor(DWT.COLOR_RED));
 		if(x < event.x && event.x <= (x + width) &&
 		   y < event.y && event.y <= (y + height))
 		{
@@ -204,40 +204,22 @@ private void addChainClickListener(Canvas canvas)
 		    if(day.marked)
 		    {
 			day.unmark(gc);
+			Storage.removeChainDate(cd.id, Integer.toInt(dateStr(day.date)));
 			break;
 		    }
+		    Storage.addChainDate(cd.id, Integer.toInt(dateStr(day.date)));
 		    day.mark(gc);
 		    break;
 		}
 	    }
+	    gc.dispose;
 	}
     });
 }
 
 
-// private void addChainYearListener(Button button,
-// 				  Canvas canvas)
-// {
-//     button.addSelectionListener(new class(button, canvas) SelectionAdapter
-//     {
-// 	Button btn;
-// 	Canvas cs;
-// 	this(Button b, Canvas c)
-// 	{
-// 	    this.btn = button;
-// 	    this.cs = canvas;
-// 	}
-// 	public void widgetSelected(SelectionEvent event)
-// 	{
-// 	    cd.year += Integer.toInt((cast(Data)this.btn.getData).get("increment"));
-// 	    drawChainYear(this.cs);
-// 	}
-//     });
-// }
-
-
 /*
-  Draw previous/next year depending on mousewheel motion.
+  Draw previous/next year depending on mouse button pressed.
  */
 private void addChainScrollListener(Canvas canvas)
 {
@@ -284,14 +266,12 @@ private void addChainScrollListener(Canvas canvas)
  */
 private void drawChainYear(Canvas canvas)
 {
-    Stdout("DRAW CHAIN YEAR").newline;
-
-    GC gc = new GC(canvas);
-    canvas.drawBackground(gc, 0, 0, canvas.getSize.x, canvas.getSize.y);
-
     int[] chainDates = Storage.getChainDates(cd.id, cd.year);
-
-    if(chainDates.length <= 0) return;
+    Day.days = null;
+    
+    GC gc = new GC(canvas);
+    gc.setBackground(Display.getCurrent.getSystemColor(DWT.COLOR_RED));
+    canvas.drawBackground(gc, 0, 0, canvas.getSize.x, canvas.getSize.y);
 
     int x = 0;
     int y = 0;
@@ -299,24 +279,23 @@ private void drawChainYear(Canvas canvas)
 
     // Draw year number in the middle.
     char[] yearStr = Integer.toString(cd.year);
-    gc.setFont(getFont(FONT_SIZE_3, DWT.NONE));
+    gc.setFont(getFont(width / 24, DWT.NONE));
     Point extent = gc.stringExtent(yearStr);
-    int marginTop = y + 10 + extent.y + 40;
+    // Bottom edge of current content.
+    // As more stuff is drawn, marginTop increases.
+    int marginTop = y + 10 + extent.y;
     int xPos = (width / 2) - (extent.x / 2);
     int yPos = y + 10;
-    gc.drawText(yearStr,
-		xPos,
-		yPos,
-		true);
+    gc.drawText(yearStr, xPos, yPos, true);
 
-    // Store year text coordinates.
+    // Store year text coordinates for scrolling detection.
     char[] data = Integer.toString(xPos);
     data ~= "." ~ Integer.toString(yPos);
     data ~= "." ~ Integer.toString(extent.x);
     data ~= "." ~ Integer.toString(extent.y);
     canvas.setData(new Data("yearStr", data));
 
-    // Draw start if chain starts given year.
+    // Draw start if chain starts on given year.
     int dayOffset = 1;
     if(cd.start.year == cd.year)
 	dayOffset = Integer.toInt(dateFormat("%j", cd.start));
@@ -324,10 +303,8 @@ private void drawChainYear(Canvas canvas)
     int daysInYear = (new Gregorian).getDaysInYear(cd.year, Gregorian.AD_ERA);
     Date date;
     width = canvas.getSize.x / 7;
-    int xDayr = x;
-    int yDayr;
-    int xDayt = x;
-    int yDayt = 0;
+    int xDate = x;
+    int yDate;
     for(int i = dayOffset; i <= daysInYear; i++)
     {
 	date = yearDayToDate(i, cd.year);
@@ -344,30 +321,29 @@ private void drawChainYear(Canvas canvas)
 	// Draw month name and day names at the beginning of each month.
 	if((dayOffset == i) || (1 == date.day))
 	{
-	    // Set scroll point to beginning of current month.
+	    // Set scroll point to the beginning of current month.
 	    if((today.year == date.year) &&
 	       (today.month == date.month))
 		if(-1 == cd.todayOrigin) cd.todayOrigin = marginTop - 30;
 
 	    char[] monthName = dateFormat("%B", date);
-
-	    gc.setFont(getFont(FONT_SIZE_3, DWT.NONE));
+	    gc.setFont(getFont(width / 5, DWT.NONE));
 	    extent = gc.stringExtent(monthName);
 	    gc.drawText(monthName, x, marginTop, true);
-
 	    marginTop += extent.y;
 
 	    // Draw weekday names.
-	    gc.setFont(getFont(FONT_SIZE_2, DWT.NONE));
+	    gc.setFont(getFont(width / 9, DWT.NONE));
 
 	    int height = width / 6;
 	    int xr = x;
 	    int yr = marginTop;
 	    int xt = x;
 	    int yt = 0;
+	    // Make Monday first day of the week.
 	    char[][] dayNames = rotateLeft(dayNames);
 
-	    for(int j = 0; j < 7; j++)
+	    for(int j = 0; j < dayNames.length; j++)
 	    {
 		gc.drawRectangle(xr, yr, width, height);
 		extent = gc.stringExtent(dayNames[j]);
@@ -376,41 +352,45 @@ private void drawChainYear(Canvas canvas)
 		gc.drawText(dayNames[j], xt, yt, true);
 		xr += width;
 	    }
-
 	    marginTop += height + 40;
 	}
 
 	// Draw day numbers.
 	int height = width;
-	xDayr += width;
+	xDate += width;
 
 	// Put first day in month under its belonging name.
 	if((1 == date.day) || (i == dayOffset))
 	{
 	    int wd = Integer.toInt(dateFormat("%w", date));
 	    wd = (0 == wd) ? 7 : wd;
-	    xDayr = (width * wd) - width;
+	    xDate = (width * wd) - width;
 	}
 
 	// New line every Monday.
 	if(1 == Integer.toInt(dateFormat("%w", date)) && (1 != date.day))
 	{
-	    xDayr = x;
+	    xDate = x;
 	    marginTop += height;
 	}
 
-	yDayr = marginTop - 40;
-	gc.drawRectangle(xDayr, yDayr, width, height);
+	yDate = marginTop - 40;
 
-	drawDate(gc, date, xDayr, yDayr, width, height);
+	Day day = Day.add(date, xDate, yDate, width, height);
+	if(contains(chainDates, Integer.toInt(dateStr(date))))
+	    day.mark(gc);
+	else
+ 	    drawDate(gc, date, xDate, yDate, width, height);
     }
 
-    (cast(GridData)canvas.getLayoutData).heightHint = marginTop + 200;
+    gc.dispose;
+    (cast(GridData)canvas.getLayoutData).heightHint = marginTop + 160;
 
     Composite c = canvas.getParent;
     ScrolledComposite sc = cast(ScrolledComposite)c.getParent;
     sc.setMinSize(c.computeSize(DWT.DEFAULT, DWT.DEFAULT));
 
+    // Set scroll anchor only first time canvas is painted.
     if(0 < cd.todayOrigin)
     {
 	sc.setOrigin(0, cd.todayOrigin);
@@ -433,96 +413,7 @@ private void addChainPaintListener(Canvas canvas)
 	}
 	public void paintControl(PaintEvent event)
         {
-	    Rectangle rect = (cast(Canvas)event.widget).getBounds;
-	    GC gc = event.gc;
-	    gc.setBackground(event.display.getSystemColor(DWT.COLOR_RED));
-	    gc.setForeground(event.display.getSystemColor(DWT.COLOR_BLACK));
-
-	    Point size = this.cs.getSize;
-	    int cx = 0;
-	    int cy = 0;
-
-  	    drawChainYear(this.cs);
-
-	    return;
-
-// 	    (cast(GridData)this.cs.getLayoutData).heightHint = cast(int)(cy * 1.05);
-
-// 	    Composite c = this.cs.getParent;
-// 	    ScrolledComposite sc = cast(ScrolledComposite)c.getParent;
-//  	    sc.setMinSize(c.computeSize(DWT.DEFAULT, DWT.DEFAULT));
-
-//	    c.layout;
-
-	    // Draw beginning of chain to the end.
-	    // Draw month's name.
-// 	    char[] monthName = dateFormat("%B", cd.start);
-// 	    Font font = getFont(FONT_SIZE_3, DWT.NONE);
-// 	    Font font = new Font(Display.getCurrent,
-// 				 new FontData(FONT_FACE_1,
-// 					      FONT_SIZE_3,
-// 					      DWT.NONE));
-// 	    gc.setFont(font);
-// 	    gc.drawText(monthName, cx, cy, true);
-
-// 	    Point extent = gc.stringExtent(monthName);
-// 	    cy = extent.y + 10;
-
-// 	    // Draw weekday names.
-// 	    font = new Font(Display.getCurrent,
-// 			    new FontData(FONT_FACE_1,
-// 					 FONT_SIZE_2,
-// 					 DWT.NONE));
-// 	    gc.setFont(font);
-
-// 	    int width = size.x / 7;
-// 	    int height = width / 6;
-// 	    int xPos = 0;
-// 	    int yPos = 0;
-// 	    char[][] dayNames = rotateLeft(dayNames);
-
-// 	    for(int i = 0; i < 7; i++)
-// 	    {
-// 		gc.drawRectangle(cx, cy, width, height);
-// 		extent = gc.stringExtent(dayNames[i]);
-// 		xPos = cx + cast(int)round(width / 2) - cast(int)round(extent.x / 2);
-// 		yPos = cy + cast(int)round(height / 2) - cast(int)round(extent.y / 2);
-// 		gc.drawText(dayNames[i], xPos, yPos, true);
-// 		cx += width;
-// 	    }
-
-
-// 	    return;
-
-// //	    int height = width;
-// 	    for(int i = 0; i < 6; i++)
-// 	    {
-// 		for(int j = 0; j < 7; j++)
-// 		{
-// 		    gc.drawRectangle(cx, cy, width, height);
-// 		    int date = Integer.toInt(Integer.toString(i) ~ Integer.toString(j));
-// 		    Day day = Day.modify(cx, cy, width, height, date);
-// 		    if(day.marked)
-// 			day.mark(gc);
-// 		    else
-// 			drawDate(gc,
-// 				 Integer.toString(date),
-// 				 cx,
-// 				 cy,
-// 				 width,
-// 				 height);
-
-// 		    cx += width;
-// 		}
-// 		cx = 0;
-// 		cy += height;
-// 	    }
-
-// 	    (cast(GridData)this.cs.getLayoutData).heightHint = cast(int)(cy * 1.05);
-
-// 	    Composite c = this.cs.getParent;
-// 	    ScrolledComposite sc = cast(ScrolledComposite)c.getParent;
-//  	    sc.setMinSize(c.computeSize(DWT.DEFAULT, DWT.DEFAULT));
+	    drawChainYear(this.cs);
 	}
     });
 }
@@ -638,13 +529,14 @@ void drawChainWindow(int id)
     c.setBackgroundMode(DWT.INHERIT_DEFAULT);
     c.setBackground(getColor(CHAIN_BACKROUNG_COLOR));
 
-    Canvas canvas = new Canvas(c, DWT.NONE);
+    Canvas canvas = new Canvas(c, DWT.DOUBLE_BUFFERED);
     canvas.setLayoutData(new GridData(DWT.FILL, DWT.FILL, true, true));
     sc.setContent(c);
     sc.setExpandHorizontal(true);
     sc.setExpandVertical(true);
 
     rightGroup.layout;
+    cd.todayOrigin = -1;
 
     addChainPaintListener(canvas);
     addChainClickListener(canvas);
