@@ -932,7 +932,6 @@ private class Chain
 		// Delete chain file if exists.
 		FilePath chainFile = new FilePath(chainFilePath);
 		if(chainFile.exists) chainFile.remove;
-
 		continue;
 	    }
 
@@ -976,17 +975,29 @@ private class Chain
 	    char[] textOut = k_decrypt_to_string(file.path ~ file.file, Auth.cipherKey);
 	    char[][] lines = Txt.splitLines(textOut);
  	    int descLen = Integer.toInt(lines[0]);
- 	    int[] dates;
 	    // Extract dates which are touching description.
-	    if((8 + descLen) == lines[4].length)
+	    char[] tail;
+	    for(int i = 4; i < lines.length; i++)
+		tail ~= "\n" ~ lines[i];
+
+	    tail = Txt.stripl(tail, '\n');
+	    char[] description = tail[0..descLen];
+
+	    tail = tail[descLen..$];
+	    // The rest of data are dates.
+ 	    int[] dates;
+	    if(8 <= tail.length)
 	    {
-		dates ~= Integer.toInt(lines[4][descLen..$]);
-		for(int i = 5; i < lines.length - 1; i++)
-		    dates ~= Integer.toInt(lines[i]);
+		char[][] dateLines = Txt.splitLines(tail);
+		foreach(line; dateLines)
+		{
+		    if(8 == line.length) dates ~= Integer.toInt(line);
+		    else break;
+		}
 	    }
 	    chains ~= new Chain(lines[1],
 				dateStrToDate(lines[2]),
-				lines[4][0..descLen],
+				description,
 				(1 == Integer.toInt(lines[3])) ? true : false,
 				file.file,
 				dates);

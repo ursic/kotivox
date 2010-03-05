@@ -8,7 +8,6 @@ public import gui.util;
 import util;
 import storage;
 
-
 private struct ChainData
 {
     int id;
@@ -45,14 +44,6 @@ private int[] strokeRight(int x, int y, int width, int height)
 }
 
 
-private bool isToday(Date date)
-{
-    return ((today.year == date.year) &&
-	    (today.month == date.month) &&
-	    (today.day == date.day));
-}
-
-
 /*
   Draws date number in a rectangle.
  */
@@ -75,8 +66,8 @@ private void drawDate(GC gc,
     if(0 == Integer.toInt(dateFormat("%w", date)))
 	gc.setForeground(Display.getCurrent.getSystemColor(DWT.COLOR_RED));
 
-    // Mark today's day.
-    if(isToday(date))
+    // Color today's day blue and bold.
+    if(date == today)
     {
 	style = DWT.BOLD;
 	gc.setForeground(Display.getCurrent.getSystemColor(DWT.COLOR_BLUE));
@@ -173,6 +164,9 @@ private class Day
 }
 
 
+/*
+  Draw big red X over chosen day.
+ */
 private void addChainClickListener(Canvas canvas)
 {
     canvas.addMouseListener(new class(canvas) MouseAdapter
@@ -198,6 +192,9 @@ private void addChainClickListener(Canvas canvas)
 		if(x < event.x && event.x <= (x + width) &&
 		   y < event.y && event.y <= (y + height))
 		{
+		    // Today's day and past days can be marked or unmarked.
+		    if(today < day.date) return;
+
 		    this.cs.drawBackground(gc, x + 1, y + 1, width - 1, height - 1);
 		    if(day.marked)
 		    {

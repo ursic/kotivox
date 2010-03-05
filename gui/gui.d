@@ -2026,6 +2026,8 @@ public class GUI
 			    int id = Integer.toInt((cast(Data)t.getData).get("id"));
 			    Storage.removeChain(id);
  			    t.dispose;
+			    foreach(child; getShellGroup(RIGHT_GROUP).getChildren)
+				child.dispose;
 			    disposed = true;
 			}
 		    }

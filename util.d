@@ -38,6 +38,13 @@ private struct Date
     int day = -1;
     int month;
     int year;
+
+    int opCmp(Date date)
+    {
+	if(elapsed(&date) < elapsed(this)) return 1;
+	if(elapsed(&date) > elapsed(this)) return -1;
+	if(elapsed(&date) == elapsed(this)) return 0;
+    }
 }
 private const static Date date;
 
@@ -416,6 +423,17 @@ Date dateStrToDate(char[] dateStr)
     date.month = Integer.toInt(dateStr[4..6]);
     date.day = Integer.toInt(dateStr[6..$]);
     return date;
+}
+
+
+int elapsed(Date* date)
+{
+    static tm timeinfo;
+    timeinfo.tm_year = date.year - 1900;
+    timeinfo.tm_mon = date.month - 1;
+    timeinfo.tm_mday = date.day;
+    timeinfo.tm_hour = 1;
+    return mktime(&timeinfo);
 }
 
 
