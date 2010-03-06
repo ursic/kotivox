@@ -166,6 +166,9 @@ private void addChainClickListener(Canvas canvas)
 
 	    foreach(day; Day.days)
 	    {
+		// Today's day and past days can be marked or unmarked.
+		if(today < day.date) return;
+
 		int x = day.x;
 		int y = day.y;
 		int width = day.width;
@@ -173,9 +176,6 @@ private void addChainClickListener(Canvas canvas)
 		if(x < event.x && event.x <= (x + width) &&
 		   y < event.y && event.y <= (y + height))
 		{
-		    // Today's day and past days can be marked or unmarked.
-		    if(today < day.date) return;
-
 		    this.cs.drawBackground(gc, x + 1, y + 1, width - 1, height - 1);
 		    if(day.marked)
 		    {
