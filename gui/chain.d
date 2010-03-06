@@ -117,25 +117,6 @@ private class Day
 	return d;
     }
 
-    /*
-      Toggle existing day.
-      Add new one if it doesn't exist already.
-     */
-    private static Day toggle(Date date, int x, int y, int width, int height)
-    {
-	foreach(day; days)
-	{
-	    if(dateStr(day.date) == dateStr(date))
-	    {
-		day.x = x;
-		day.y = y;
-		day.width = width;
-		day.height = height;
-		return day;
-	    }
-	}
-	return add(date, x, y, width, height);
-    }
 
     private void mark(GC gc)
     {
