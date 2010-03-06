@@ -83,26 +83,6 @@ public class GUI
     }
 
 
-    /*
-      Return copy of text pad menu.
-     */
-//     private Menu copyMenu()
-//     {
-// 	Menu menu = new Menu(getTextPad);
-// 	if(!this.textPadMenu) this.textPadMenu = new Menu(getTextPad);
-// 	foreach(item; this.textPadMenu.getItems)
-// 	{
-// 	    static MenuOption option;
-// 	    option.id = (cast(Data)item.getData).get("id");
-// 	    option.index = menu.indexOf(item);
-// 	    option.text = item.getText;
-// 	    option.style = item.style;
-// 	    addMenuOption(option);
-// 	}
-// 	return menu;
-//     }
-
-
     private void setWindowSizeSettings(Shell shell)
     {
  	Point size = shell.getSize;
@@ -917,8 +897,6 @@ public class GUI
 	    }
 	    public void keyPressed(KeyEvent event)
 	    {
-//		if(this.txtPad.isDisposed) this.txtPad = getTextPad;
-
 		// Save encrypted text to file when "CTRL + S" pressed
 		if(this.txtPad.getEditable &&
 		   ((event.stateMask == DWT.CTRL) && (event.keyCode == KEY_S)))
@@ -1044,32 +1022,31 @@ public class GUI
     /*
       Store new category name and change it in textPad's context menu.
     */
-    private void addCategoryNameModifyListener(Text textInput, Menu menu)
+    private void addCategoryNameModifyListener(Text textInput)
     {
-	textInput.addModifyListener(new class(textInput, menu) ModifyListener
+	textInput.addModifyListener(new class(textInput) ModifyListener
         {
 	    Text catText;
 	    Menu txtPadMenu;
-	    this(Text t, Menu m)
+	    this(Text t)
             {
 		this.catText = textInput;
-		this.txtPadMenu = menu;
+		this.txtPadMenu = getTextPad.getMenu;
 	    }
 
 	    public void modifyText(ModifyEvent event)
             {
-		int id = Integer.toInt((cast(Data)this.catText.getData).get("id"));
-		Storage.renameCategory(id, this.catText.getText);
-
-		foreach(MenuItem catItem; this.txtPadMenu.getItems)
+ 		char[] id = (cast(Data)this.catText.getData).get("id");
+		MenuOption[] mo;
+		foreach(option; menuOptions)
 		{
- 		    int itemId = Integer.toInt((cast(Data)catItem.getData).get("id"));
- 		    if(itemId == id)
-		    {
-			catItem.setText(this.catText.getText);
-			break;
-		    }
+		    if(option.id == id)
+			option.text = this.catText.getText;
+		    mo ~= option;
 		}
+		menuOptions = mo;
+		
+ 		Storage.renameCategory(Integer.toInt(id), this.catText.getText);
 	    }
 	});
     }
@@ -1632,7 +1609,7 @@ public class GUI
 	    catText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
 	    // Prevent default menu.
 	    catText.setMenu(new Menu(catText));
-	    addCategoryNameModifyListener(catText, textPadMenu);
+	    addCategoryNameModifyListener(catText);
 
 	    // Add category to textPad's context menu.
 	    static MenuOption catItem;
@@ -1684,22 +1661,16 @@ public class GUI
 			Text t = cast(Text)c;
  			if(Txt.trim(t.getText).length <= 0)
 			{
-			    int id = Integer.toInt((cast(Data)b.getData).get("id"));
-			    Storage.removeCategory(id);
+			    char[] id = (cast(Data)b.getData).get("id");
+			    Storage.removeCategory(Integer.toInt(id));
 			    b.dispose;
  			    t.dispose;
 			    disposed = true;
 
 			    // Remove category from textPad's context menu.
-			    foreach(catItem; this.txtPadMenu.getItems)
-			    {
-				int itemId = Integer.toInt((cast(Data)catItem.getData).get("id"));
-				if(itemId == id)
-				{
-				    catItem.dispose;
-				    break;
-				}
-			    }
+			    static MenuOption option;
+			    option.id = id;
+			    removeMenuOption(option);
 			}
 		    }
 		}
@@ -1725,14 +1696,14 @@ public class GUI
 		    catText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
 		    // Prevent default menu.
 		    catText.setMenu(new Menu(catText));
-		    addCategoryNameModifyListener(catText, this.txtPadMenu);
+		    addCategoryNameModifyListener(catText);
 
 		    // Add category to textPad's context menu.
 		    // 0 puts menu item on top of menu.
-		    static MenuOption catItem = {text:NEW_CATEGORY_TEXT,
-						 index:0};
-		    catItem.id = id;
-		    addMenuOption(catItem);
+		    static MenuOption option = {text:NEW_CATEGORY_TEXT,
+						index:0};
+		    option.id = id;
+		    addMenuOption(option);
 		}
 
 		// Redraw parent container.
