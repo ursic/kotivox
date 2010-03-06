@@ -286,7 +286,7 @@ private void drawChainYear(Canvas canvas)
 	date = yearDayToDate(i, cd.year);
 
 	// Stop at current month for current year.
-	if((today.year == cd.year) &&
+	if((today.year <= cd.year) &&
 	   (today.month < date.month))
 	    break;
 
