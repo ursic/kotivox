@@ -341,32 +341,6 @@ char[] sanitizeStr(char[] instr, int strlen = 30, bool singleLine = true)
 
 
 /*
-  Remove all matching integers from given array.
-*/
-void removeInts(ref int[] array, int element)
-{
-    int[] elements;
-    foreach(el; array)
-    {
-	if(el == element) continue;
-	elements ~= el;
-    }
-    array = elements;
-}
-
-
-/*
-  Concatenate array of integers and return resulting string.
-*/
-char[] serialize(int[] array)
-{
-    char[] str;
-    foreach(el; array) str ~= Integer.toString(el);
-    return str;
-}
-
-
-/*
   Return today's date structure.
  */
 Date today()

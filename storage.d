@@ -834,10 +834,16 @@ private class Chain
      */
     private static void removeDate(int id, int date)
     {
+	int[] dates;
 	foreach(chain; chains)
 	    if(chain.id == id)
 	    {
-		chain.dates.removeInts(date);
+		foreach(cdate; chain.dates)
+		{
+		    if(cdate == date) continue;
+		    dates ~= cdate;
+		}
+		chain.dates = dates;
 		chain.changed = true;
 		break;
 	    }
