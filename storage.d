@@ -712,7 +712,6 @@ private class Chain
 {
     private int id;
     private char[] name;
-    private char[] origName;
     private char[] desc;
     private char[] filename;
     private Date startDate;
