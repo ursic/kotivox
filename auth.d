@@ -157,6 +157,12 @@ public class Auth
 	char[] passwordIdent1 = getConfig("ident");
 	char[] passwordIdent2 = passwordToIdent(password);
 
+	if(128 != passwordIdent1.length)
+	{
+	    errorMsg = "Password seems to be incorrect.\nPlease enter correct password.";
+	    return false;
+	}
+
 	// Login the user if password digests match.
 	if(passwordIdent1 == passwordIdent2)
 	{
