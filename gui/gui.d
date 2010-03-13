@@ -2164,7 +2164,7 @@ public class GUI
 	    Button btnExit;
 	    this(StyledText text, Shell shell, Button button)
 	    {
-		this.txtPad = textPad;
+		this.txtPad = getTextPad;
 		this.shell = shell;
 		this.btnExit = bExit;
 	    }
@@ -2172,8 +2172,8 @@ public class GUI
 	    {
 		if(event.widget is this.btnExit)
 		{
-		    if(!this.txtPad.isDisposed)
-			saveText(this.txtPad);
+		    this.txtPad = getTextPad;
+		    saveText(this.txtPad);
 
 		    Storage.saveFinal;
 		    this.shell.close;

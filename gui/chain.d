@@ -505,7 +505,7 @@ void drawChainWindow(int id)
     c.setBackgroundMode(DWT.INHERIT_DEFAULT);
     c.setBackground(getColor(CHAIN_BACKROUNG_COLOR));
 
-    Canvas canvas = new Canvas(c, DWT.DOUBLE_BUFFERED);
+    Canvas canvas = new Canvas(c, DWT.NONE);
     canvas.setLayoutData(new GridData(DWT.FILL, DWT.FILL, true, true));
     sc.setContent(c);
     sc.setExpandHorizontal(true);
