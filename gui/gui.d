@@ -276,8 +276,9 @@ public class GUI
       Store text in text pad according to note ID.
       -1 indicates text, values 0 or larger indicate note.
      */
-    private void saveText(StyledText txtPad)
+    private void saveText()
     {
+	StyledText txtPad = getTextPad;
 	int id = Integer.toInt((cast(Data)txtPad.getData).get("noteid"));
 	// Invalid note ID indicates day text, so we save to today's day.
 	if(-1 == id)
@@ -695,7 +696,7 @@ public class GUI
 		todayStr ~= Integer.toString(today.month) ~ "-";
 		todayStr ~= Integer.toString(today.year);
 
-		saveText(this.txtPad);
+		saveText;
 
 		// Allow editing of today's entry only.
 		if(todayStr == date)
@@ -901,7 +902,7 @@ public class GUI
 		if(this.txtPad.getEditable &&
 		   ((event.stateMask == DWT.CTRL) && (event.keyCode == KEY_S)))
 		{
-		    saveText(this.txtPad);
+		    saveText;
 		    Storage.saveFinal;
 		}
 
@@ -1302,7 +1303,7 @@ public class GUI
 		    char[] dayName = event.text[4..12];
 		    Date date = dateStrToDate(dayName);
 
-		    saveText(txtPad);
+		    saveText;
 
 		    if(getTodayFileName == dayName) txtPad.setEditable(true);
 		    else txtPad.setEditable(false);
@@ -1357,7 +1358,7 @@ public class GUI
 		{
 		    // Save current text so it becomes searchable,
 		    // and cannot be overwritten when jump to search result is made.
-		    saveText(this.txtPad);
+		    saveText;
 
 		    char[] searchResults;
 		    // Get the first search result page.
@@ -1396,7 +1397,7 @@ public class GUI
 		this.cal.setDay(today.day);
 		markCalendarDays(this.cal);
 		hideSearchChildren(this.txtPad.getParent);
-		saveText(this.txtPad);
+		saveText;
 		this.txtPad.setText(Storage.getText);
 		this.txtPad.setData(new Data("noteid", "-1"));
 		this.txtPad.setEditable(true);
@@ -1447,7 +1448,7 @@ public class GUI
 		if(this.txtPad.isDisposed) this.txtPad = getTextPad;
 
 		hideSearchChildren(this.txtPad.getParent);
-		saveText(this.txtPad);
+		saveText;
 		char[] noteID = (cast(Data)this.noteTxt.getData).get("id");
 		this.txtPad.setText(Storage.noteContent(Integer.toInt(noteID)));
 
@@ -1928,7 +1929,7 @@ public class GUI
 	    }
 	    public void mouseDown(MouseEvent event)
 	    {
-		saveText(getTextPad);
+		saveText;
 		drawChainWindow(Integer.toInt((cast(Data)this.chainTxt.getData).get("id")));
 	    }
 	    // Canvas seems to steal focus.
@@ -2157,14 +2158,12 @@ public class GUI
 	bExit.setText(SAVE_CLOSE_TEXT);
         bExit.setLayoutData(gdButtonExit);
 
-	bExit.addListener(DWT.Selection, new class(textPad, shell, bExit) Listener
+	bExit.addListener(DWT.Selection, new class(shell, bExit) Listener
 	{
-	    StyledText txtPad;
 	    Shell shell;
 	    Button btnExit;
-	    this(StyledText text, Shell shell, Button button)
+	    this(Shell shell, Button button)
 	    {
-		this.txtPad = getTextPad;
 		this.shell = shell;
 		this.btnExit = bExit;
 	    }
@@ -2172,9 +2171,7 @@ public class GUI
 	    {
 		if(event.widget is this.btnExit)
 		{
-		    this.txtPad = getTextPad;
-		    saveText(this.txtPad);
-
+		    saveText;
 		    Storage.saveFinal;
 		    this.shell.close;
 		}
