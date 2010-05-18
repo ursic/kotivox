@@ -145,17 +145,17 @@ private class Category
       Add new category with name to categories array.
       Return id of added category.
     */
-    private static int addCategory(char[] name)
+    private static int add()
     {
 	int id = getFreeSlot(getIds);
-	categories ~= new Category(id, sanitizeStr(name));
+	categories ~= new Category(id, CATEGORY_TEXT ~ " " ~ Integer.toString(id + 1));
 	return id;
     }
 
     /*
       Removes category of given id from categories array.
     */
-    private static void removeCategory(int id)
+    private static void remove(int id)
     {
 	Category new_categories[];
 	foreach(Category category; categories)
@@ -166,7 +166,7 @@ private class Category
 	categories = new_categories;
     }
 
-    private static void renameCategory(int id, char[] name)
+    private static void categoryName(int id, char[] name)
     {
 	foreach(Category c; categories)
 	{
@@ -236,7 +236,7 @@ private class Category
     /*
       Return name of category with id.
      */
-    private static char[] getCategoryName(int id)
+    private static char[] categoryName(int id)
     {
 	foreach(Category c; categories)
 	    if(c.id == id) return c.name;
@@ -247,7 +247,7 @@ private class Category
     /*
       Return ID of category with name.
      */
-    private static int getCategoryID(char[] name)
+    private static int getID(char[] name)
     {
 	foreach(Category c; categories)
 	    if(Unicode.toLower(c.name) == Unicode.toLower(Txt.trim(name))) return c.id;
@@ -259,7 +259,7 @@ private class Category
       Return associative array with category id as key
       and category name as value.
      */
-    private static char[][] getCategory()
+    private static char[][] get()
     {
 	if(0 == catRetrCount)
 	{
@@ -1125,32 +1125,32 @@ public class Storage
 
     static public char[][] getCategory()
     {
-	return Category.getCategory;
+	return Category.get;
     }
 
     static public int addCategory(char[] name)
     {
-	return Category.addCategory(name);
+	return Category.add;
     }
 
     static public void renameCategory(int id, char[] name)
     {
-	Category.renameCategory(id, name);
+	Category.categoryName(id, name);
     }
 
     static public void removeCategory(int id)
     {
-	Category.removeCategory(id);
+	Category.remove(id);
     }
 
     static public char[] getCategoryName(int id)
     {
-	return Category.getCategoryName(id);
+	return Category.categoryName(id);
     }
 
     static public int getCategoryID(char[] name)
     {
-	return Category.getCategoryID(name);
+	return Category.getID(name);
     }
 
     /*

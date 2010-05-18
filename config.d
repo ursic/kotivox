@@ -46,8 +46,6 @@ public const int MAIN_WINDOW_CALENDAR_HEIGHT = 200;
 public const int MAIN_WINDOW_LEFT_COLUMN_BUTTON_HEIGHT = 40;
 public const int CATEGORY_CHECKBOX_WIDTH = 24;
 public const int CATEGORY_LABEL_WIDTH = 182;
-public const int ADD_REMOVE_BUTTON_WIDTH = 49;
-public const int ADD_REMOVE_BUTTON_HEIGHT = 34;
 public const int CATEGORY_NAME_WIDTH = 180;
 public const int CATEGORY_LIST_HEIGHT = 300;
 
@@ -65,11 +63,11 @@ public const char[] OR_TEXT = "OR";
 public const char[] LOGIN_TEXT = "Login";
 public const char[] REGISTER_TEXT = "Register";
 public const char[] CANNOT_REGISTER = "I don't have enough data for registration.\nPlease enter username and matching passwords.";
+public const char[] NEW_TEXT = "NEW";
+public const char[] REMOVE_TEXT = "REMOVE";
+public const char[] CATEGORY_TEXT = "Category";
 public const char[] CATEGORIES_TEXT = "Categories";
-public const char[] NEW_CATEGORY_TEXT = "New category";
 public const char[] CLEAR_MENU_ITEM_TEXT = "Clear";
-public const char[] ADD_REMOVE_TEXT = "+ −";
-public const char[] ADD_REMOVE_BUTTON_TOOLTIP = "Add/Remove";
 public const char[] SAVE_CLOSE_TEXT = "Save && Close";
 
 public const int KEY_ENTER = 13;

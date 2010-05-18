@@ -193,7 +193,7 @@ public class GUI
 
 
     /*
-      Add category name catName to line
+      Add category name catName to line.
      */
     private void addCategoryName(StyledText text, Point line, char[] catName)
     {
@@ -403,6 +403,20 @@ public class GUI
     }
 
 
+    private void redrawParent(Composite c, bool expand = false)
+    {
+        ScrolledComposite sc = cast(ScrolledComposite)c.getParent;
+        sc.setContent(c);
+        sc.setMinSize(c.computeSize(DWT.DEFAULT, DWT.DEFAULT));
+
+        if(expand)
+        {
+            sc.setExpandHorizontal(true);
+            sc.setExpandVertical(true);
+        }
+    }
+
+
     private void addShellListener(Shell shell)
     {
 	shell.addShellListener(new class(shell) ShellAdapter
@@ -470,7 +484,7 @@ public class GUI
 			break;
 
                     default:
-			Stdout("Unknown button").newline();
+			Stdout("Unknown button").newline;
 		    }
 		}
 	    }
@@ -1021,6 +1035,82 @@ public class GUI
 
 
     /*
+      Remove category.
+     */
+    private void addCatNameMenuItemListener(MenuItem menuItem, Text catText)
+    {
+	menuItem.addSelectionListener(new class(catText) SelectionAdapter
+        {
+            Text catTxt;
+            Composite _catEditList;
+	    this(Text t)
+	    {
+                this.catTxt = catText;
+		this._catEditList = this.catTxt.getParent;
+	    }
+
+            // Remove category and belonging checkbox.
+	    public void widgetSelected(SelectionEvent event)
+	    {
+                int idSelected = Integer.toInt((cast(Data)this.catTxt.getData).get("id"));
+                int id;
+		Button b;
+		foreach(Control c; this._catEditList.getChildren)
+		{
+		    if("Button" == c.getName)
+			b = cast(Button)c;
+
+		    if("Text" == c.getName)
+		    {
+                        id = Integer.toInt((cast(Data)c.getData).get("id"));
+                        if(idSelected == id)
+			{
+			    Storage.removeCategory(idSelected);
+			    b.dispose;
+ 			    c.dispose;
+
+			    // Remove category from textPad's context menu.
+			    static MenuOption option;
+			    option.id = Integer.toString(idSelected);
+			    removeMenuOption(option);
+                            break;
+			}
+		    }
+		}
+
+                // Refresh category list.
+                redrawParent(this._catEditList);
+            }
+        });
+    }
+
+
+    /*
+      Show right-click / context menu for each category.
+    */
+    private void addCategoryNameMenuListener(Text textInput)
+    {
+	textInput.addMenuDetectListener(new class(textInput) MenuDetectListener
+        {
+	    Text catTxt;
+	    this(Text t)
+            {
+		this.catTxt = textInput;
+	    }
+
+	    public void menuDetected(MenuDetectEvent event)
+            {
+                Menu menu = new Menu(this.catTxt);
+                MenuItem item = new MenuItem(menu, DWT.NONE);
+                item.setText(REMOVE_TEXT ~ " " ~ this.catTxt.getText);
+                this.catTxt.setMenu(menu);
+                addCatNameMenuItemListener(item, this.catTxt);
+            }
+        });
+    }
+
+
+    /*
       Store new category name and change it in textPad's context menu.
     */
     private void addCategoryNameModifyListener(Text textInput)
@@ -1244,10 +1334,7 @@ public class GUI
 	link.setLayoutData(gdLink);
 	link.setText(toUtf8(content));
 
-	sc.setContent(c);
-	sc.setMinSize(c.computeSize(DWT.DEFAULT, DWT.DEFAULT));
-	sc.setExpandHorizontal(true);
-	sc.setExpandVertical(true);
+        redrawParent(c, true);
 
 	// Adjust height of text pad above.
 	(cast(GridData)textPad.getLayoutData).heightHint = parent.getSize.y / 2;
@@ -1460,6 +1547,7 @@ public class GUI
 	});
     }
 
+
     /*
       Draw text pad on the right and return it.
     */
@@ -1479,6 +1567,7 @@ public class GUI
 	textPad.setScrollBarVisible(textPad.getHorizontalBar, false);
 	return textPad;
     }
+
 
     /*
       Return text pad.
@@ -1509,6 +1598,7 @@ public class GUI
 
 	return this.tp;
     }
+
 
     /*
       Draw text input for global search.
@@ -1551,6 +1641,7 @@ public class GUI
 	return textSearch;
     }
 
+
     /*
       Toggle checkboxes in category list.
      */
@@ -1582,6 +1673,59 @@ public class GUI
 	});	
     }
 
+
+    /*
+      Add new category.
+     */
+    private void addCatMenuDetectListener(Button catCheck, Composite catEditList)
+    {
+	catCheck.addMenuDetectListener(new class(catCheck, catEditList) MenuDetectListener
+	{
+	    Button _catCheck;
+	    Composite _catEditList;
+	    this(Button b, Composite c)
+	    {
+		this._catCheck = catCheck;
+		this._catEditList = catEditList;
+	    }
+	    public void menuDetected(MenuDetectEvent event)
+	    {
+                // ID of new category.
+                char[] id = Integer.toString(Storage.addCategory(CATEGORY_TEXT));
+                char[] name = CATEGORY_TEXT ~ " " ~ Integer.toString(Integer.toInt(id) + 1);
+
+                GridData gdCheck = new GridData(CATEGORY_CHECKBOX_WIDTH, DWT.DEFAULT);
+                Button catCheck = new Button(this._catEditList, DWT.CHECK);
+                catCheck.setData(new Data("id", id));
+                catCheck.setLayoutData(gdCheck);
+                catCheck.setSelection(true);
+
+                GridData gdText = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
+                Text catText = new Text(this._catEditList, DWT.NONE);
+                setFont(catText, FONT_SIZE_1, DWT.NONE);
+                catText.setData(new Data("id", id));
+                catText.setText(name);
+                catText.setLayoutData(gdText);
+                catText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+                // Prevent default menu.
+                catText.setMenu(new Menu(catText));
+                addCategoryNameModifyListener(catText);
+                addCategoryNameMenuListener(catText);
+
+                // Add category to textPad's context menu.
+                // 0 puts menu item on top of menu.
+                static MenuOption option = {index:0};
+                option.text = name;
+                option.id = id;
+                addMenuOption(option);
+
+                // Refresh category list.
+                redrawParent(this._catEditList);
+            }
+        });
+    }
+
+
     /*
       Populate category list with category names.
      */
@@ -1611,6 +1755,7 @@ public class GUI
 	    // Prevent default menu.
 	    catText.setMenu(new Menu(catText));
 	    addCategoryNameModifyListener(catText);
+            addCategoryNameMenuListener(catText);
 
 	    // Add category to textPad's context menu.
 	    static MenuOption catItem;
@@ -1619,101 +1764,8 @@ public class GUI
 	    addMenuOption(catItem);
  	}
 
-	ScrolledComposite sc = cast(ScrolledComposite)catEditList.getParent;
-        sc.setContent(catEditList);
-	sc.setMinSize(catEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
-        sc.setExpandHorizontal(true);
-        sc.setExpandVertical(true);
+        redrawParent(catEditList, true);
     }
-
-
-    /*
-      Add to or remove category from category list.
-     */
-    private void addCategoryToggleListener(Button catAdd, Composite catEditList, StyledText textPad)
-    {
-	catAdd.addSelectionListener(new class(catEditList, textPad) SelectionAdapter
-	{
-	    Composite _catEditList;
-	    ScrolledComposite _sc;
-	    Menu txtPadMenu;
-	    StyledText txtPad;
-	    this(Composite c, StyledText t)
-	    {
-		this._catEditList = catEditList;
-		this._sc = cast(ScrolledComposite)catEditList.getParent;
-		this.txtPad = textPad;
-		this.txtPadMenu = this.txtPad.getMenu;
-	    }
-
-	    public void widgetSelected(SelectionEvent event)
-	    {
-		// Remove categories with empty names
-		// and belonging checkboxes.
-		Button b;
-		bool disposed = false;
-		foreach(Control c; this._catEditList.getChildren)
-		{
-		    if("Button" == c.getName)
-			b = cast(Button)c;
-
-		    if("Text" == c.getName)
-		    {
-			Text t = cast(Text)c;
- 			if(Txt.trim(t.getText).length <= 0)
-			{
-			    char[] id = (cast(Data)b.getData).get("id");
-			    Storage.removeCategory(Integer.toInt(id));
-			    b.dispose;
- 			    t.dispose;
-			    disposed = true;
-
-			    // Remove category from textPad's context menu.
-			    static MenuOption option;
-			    option.id = id;
-			    removeMenuOption(option);
-			}
-		    }
-		}
-
-		// Add new category and checkbox if none have been disposed.
-		if(!disposed)
-		{
-		    // ID of new category.
-		    char[] id = Integer.toString(Storage.addCategory(NEW_CATEGORY_TEXT));
-
-		    GridData gdCheck = new GridData(CATEGORY_CHECKBOX_WIDTH, DWT.DEFAULT);
-		    Button catCheck = new Button(this._catEditList, DWT.CHECK);
-		    catCheck.setData(new Data("id", id));
-		    catCheck.setLayoutData(gdCheck);
-		    catCheck.setSelection(true);
-
-		    GridData gdText = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
-		    Text catText = new Text(this._catEditList, DWT.NONE);
-		    setFont(catText, FONT_SIZE_1, DWT.NONE);
-		    catText.setData(new Data("id", id));
-		    catText.setText(NEW_CATEGORY_TEXT);
-		    catText.setLayoutData(gdText);
-		    catText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
-		    // Prevent default menu.
-		    catText.setMenu(new Menu(catText));
-		    addCategoryNameModifyListener(catText);
-
-		    // Add category to textPad's context menu.
-		    // 0 puts menu item on top of menu.
-		    static MenuOption option = {text:NEW_CATEGORY_TEXT,
-						index:0};
-		    option.id = id;
-		    addMenuOption(option);
-		}
-
-		// Redraw parent container.
-		this._sc.setContent(this._catEditList);
-		this._sc.setMinSize(this._catEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
-	    }
-	});
-    }
-
 
     /*
       Draw category list.
@@ -1729,13 +1781,6 @@ public class GUI
 	setFont(catCheck, FONT_SIZE_1, DWT.BOLD);
 	catCheck.setSelection(true);
         catCheck.setText(CATEGORIES_TEXT);
-
-	GridData gdCat2 = new GridData(ADD_REMOVE_BUTTON_WIDTH, ADD_REMOVE_BUTTON_HEIGHT);
-	Button catAdd = new Button(catEditGroup, DWT.LEFT);
-	catAdd.setLayoutData(gdCat2);
-	setFont(catAdd, FONT_SIZE_2, DWT.BOLD);
-        catAdd.setText(ADD_REMOVE_TEXT);
-	catAdd.setToolTipText(ADD_REMOVE_BUTTON_TOOLTIP);
 
 	Composite c = new Composite(composite, DWT.NONE);
 	c.setLayout(new FillLayout(DWT.VERTICAL));
@@ -1755,8 +1800,8 @@ public class GUI
 	// Check or uncheck all categories.
 	addCategoryCheckListener(catCheck, catEditList);
 
-	// Add to or remove category from category list.
-	addCategoryToggleListener(catAdd, catEditList, textPad);
+        // Menu for adding categories.
+	addCatMenuDetectListener(catCheck, catEditList);
 
 	return catEditList;
     }
@@ -1780,76 +1825,118 @@ public class GUI
 	    noteText.setMenu(new Menu(noteText));
 	    addNoteNameModifyListener(noteText);
 	    addNoteMouseListener(noteText);
+            addNoteNameMenuListener(noteText);
 	}
 
-	ScrolledComposite scn = cast(ScrolledComposite)noteEditList.getParent;
-        scn.setContent(noteEditList);
-	scn.setMinSize(noteEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
-        scn.setExpandHorizontal(true);
-        scn.setExpandVertical(true);
+        redrawParent(noteEditList, true);
     }
 
 
     /*
-      Add to or remove note from note list.
+      Remove notes.
      */
-    private void addNoteToggleListener(Button noteAdd, Composite noteEditList, StyledText textPad)
+    private void addNoteNameMenuItemListener(MenuItem menuItem, Text noteText)
     {
-	noteAdd.addSelectionListener(new class(noteEditList, textPad) SelectionAdapter
-	{
-	    Composite _noteEditList;
-	    ScrolledComposite _scn;
-	    StyledText txtPad;
-	    this(Composite c, StyledText t)
+	menuItem.addSelectionListener(new class(noteText) SelectionAdapter
+        {
+            Text noteTxt;
+            Composite _noteEditList;
+	    this(Text t)
 	    {
-		this._noteEditList = noteEditList;
-		this._scn = cast(ScrolledComposite)noteEditList.getParent;
-		this.txtPad = textPad;
+                this.noteTxt = noteText;
+		this._noteEditList = this.noteTxt.getParent;
 	    }
+
 	    public void widgetSelected(SelectionEvent event)
 	    {
-		// Remove notes with empty names.
-		bool disposed = false;
+                int idSelected = Integer.toInt((cast(Data)this.noteTxt.getData).get("id"));
+                int id;
 		foreach(Control c; this._noteEditList.getChildren)
 		{
 		    if("Text" == c.getName)
 		    {
-			Text t = cast(Text)c;
- 			if(Txt.trim(t.getText).length <= 0)
+                        id = Integer.toInt((cast(Data)c.getData).get("id"));
+                        if(idSelected == id)
 			{
-			    int id = Integer.toInt((cast(Data)t.getData).get("id"));
+			    id = Integer.toInt((cast(Data)c.getData).get("id"));
 			    Storage.removeNote(id);
- 			    t.dispose;
-			    disposed = true;
+ 			    c.dispose;
+                            // Clean up right side.
+			    foreach(child; getShellGroup(RIGHT_GROUP).getChildren)
+				child.dispose;
 			}
 		    }
 		}
 
-		// Add new note if none have been disposed.
-		if(!disposed)
-		{
-		    char[] id = Integer.toString(Storage.addNote);
-		    char[] name = NOTES_TEXT ~ " " ~ Integer.toString(Integer.toInt(id) + 1);
+                // Refresh note list.
+                redrawParent(this._noteEditList);
+            }
+        });
+    }
 
-		    GridData gdText = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
-		    Text noteText = new Text(this._noteEditList, DWT.NONE);
-		    setFont(noteText, FONT_SIZE_1, DWT.NONE);
-		    noteText.setData(new Data("id", id));
-		    noteText.setText(name);
-		    noteText.setLayoutData(gdText);
-		    noteText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
-		    // Prevent default menu.
-		    noteText.setMenu(new Menu(noteText));
-		    Storage.noteContent(Integer.toInt(id), name);
-		    addNoteNameModifyListener(noteText);
-		    addNoteMouseListener(noteText);
-		}
 
-		// Redraw parent container.
-		this._scn.setContent(this._noteEditList);
-		this._scn.setMinSize(this._noteEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
+    /*
+      Show right-click / context menu for each note.
+    */
+    private void addNoteNameMenuListener(Text textInput)
+    {
+	textInput.addMenuDetectListener(new class(textInput) MenuDetectListener
+        {
+	    Text noteTxt;
+	    this(Text t)
+            {
+		this.noteTxt = textInput;
 	    }
-	});
+
+	    public void menuDetected(MenuDetectEvent event)
+            {
+                Menu menu = new Menu(this.noteTxt);
+                MenuItem item = new MenuItem(menu, DWT.NONE);
+                item.setText(REMOVE_TEXT ~ " " ~ this.noteTxt.getText);
+                this.noteTxt.setMenu(menu);
+                addNoteNameMenuItemListener(item, this.noteTxt);
+            }
+        });
+    }
+
+
+    /*
+      Add new note.
+     */
+    private void addNoteMenuDetectListener(Label lNotes, Composite noteEditList)
+    {
+	lNotes.addMenuDetectListener(new class(lNotes, noteEditList) MenuDetectListener
+	{
+            Label _lNotes;
+            Composite _noteEditList;
+	    this(Label l, Composite c)
+	    {
+                this._lNotes = lNotes;
+		this._noteEditList = noteEditList;
+	    }
+	    public void menuDetected(MenuDetectEvent event)
+	    {
+                char[] id = Integer.toString(Storage.addNote);
+                char[] name = NOTES_TEXT ~ " " ~ Integer.toString(Integer.toInt(id) + 1);
+
+                GridData gdText = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
+                Text noteText = new Text(this._noteEditList, DWT.NONE);
+                setFont(noteText, FONT_SIZE_1, DWT.NONE);
+                noteText.setData(new Data("id", id));
+                noteText.setText(name);
+                noteText.setLayoutData(gdText);
+                noteText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+                // Prevent default menu.
+                noteText.setMenu(new Menu(noteText));
+                Storage.noteContent(Integer.toInt(id), name);
+                addNoteNameModifyListener(noteText);
+                addNoteMouseListener(noteText);
+                addNoteNameMenuListener(noteText);
+
+                // Refresh note list.
+                redrawParent(this._noteEditList);
+            }
+        });
     }
 
 
@@ -1867,13 +1954,6 @@ public class GUI
 	setFont(lNotes, FONT_SIZE_1, DWT.BOLD);
         lNotes.setText(NOTES_TEXT);
 
-	GridData gdNote2 = new GridData(ADD_REMOVE_BUTTON_WIDTH, ADD_REMOVE_BUTTON_HEIGHT);
-	Button noteAdd = new Button(notesEditGroup, DWT.CENTER);
-	noteAdd.setLayoutData(gdNote2);
-	setFont(noteAdd, FONT_SIZE_2, DWT.BOLD);
-        noteAdd.setText(ADD_REMOVE_TEXT);
-	noteAdd.setToolTipText(ADD_REMOVE_BUTTON_TOOLTIP);
-
 	Composite n = new Composite(composite, DWT.NONE);
 	n.setLayout(new FillLayout(DWT.VERTICAL));
 	GridData gdn = new GridData(DWT.LEFT, DWT.TOP, true, true);
@@ -1888,8 +1968,8 @@ public class GUI
 	// Populate note list box with saved user notes.
 	fillNoteList(noteEditList, textPad);
 
-	// Add to or remove note from note list.
-	addNoteToggleListener(noteAdd, noteEditList, textPad);
+	// Menu for adding notes.
+	addNoteMenuDetectListener(lNotes, noteEditList);
     }
 
 
@@ -1959,77 +2039,119 @@ public class GUI
 	    chainText.setMenu(new Menu(chainText));
  	    addChainNameModifyListener(chainText);
  	    addChainMouseListener(chainText);
+            addChainNameMenuListener(chainText);
 	}
 
-	ScrolledComposite scc = cast(ScrolledComposite)chainEditList.getParent;
-        scc.setContent(chainEditList);
-	scc.setMinSize(chainEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
-        scc.setExpandHorizontal(true);
-        scc.setExpandVertical(true);
+        redrawParent(chainEditList, true);
     }
 
 
+
     /*
-      Add to or remove note from note list.
+      Remove chain.
      */
-    private void addChainToggleListener(Button chainAdd, Composite chainEditList)
+    private void addChainNameMenuItemListener(MenuItem menuItem, Text chainText)
     {
-	chainAdd.addSelectionListener(new class(chainEditList) SelectionAdapter
-	{
-	    Composite _chainEditList;
-	    ScrolledComposite _scc;
-	    this(Composite c)
+	menuItem.addSelectionListener(new class(chainText) SelectionAdapter
+        {
+            Text chainTxt;
+            Composite _chainEditList;
+	    this(Text t)
 	    {
-		this._chainEditList = chainEditList;
-		this._scc = cast(ScrolledComposite)chainEditList.getParent;
+                this.chainTxt = chainText;
+		this._chainEditList = this.chainTxt.getParent;
 	    }
 
 	    public void widgetSelected(SelectionEvent event)
 	    {
-		// Remove chains with empty names.
-		bool disposed = false;
+                int idSelected = Integer.toInt((cast(Data)this.chainTxt.getData).get("id"));
+                int id;
 		foreach(Control c; this._chainEditList.getChildren)
 		{
 		    if("Text" == c.getName)
 		    {
-			Text t = cast(Text)c;
- 			if(Txt.trim(t.getText).length <= 0)
+                        id = Integer.toInt((cast(Data)c.getData).get("id"));
+                        if(idSelected == id)
 			{
-			    int id = Integer.toInt((cast(Data)t.getData).get("id"));
+			    id = Integer.toInt((cast(Data)c.getData).get("id"));
 			    Storage.removeChain(id);
- 			    t.dispose;
+ 			    c.dispose;
+                            // Clean up right side.
 			    foreach(child; getShellGroup(RIGHT_GROUP).getChildren)
 				child.dispose;
-			    disposed = true;
 			}
 		    }
 		}
 
-		// Add new chain if none have been disposed.
-		if(!disposed)
-		{
-		    int id = Storage.addChain;
-		    char[] name = CHAIN_TEXT ~ " " ~ Integer.toString(id + 1);
-		    Storage.chainDesc(id, name);
+                // Refresh chain list.
+                redrawParent(this._chainEditList);
+            }
+        });
+    }
 
-		    GridData gdText = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
-		    Text chainText = new Text(this._chainEditList, DWT.NONE);
-		    setFont(chainText, FONT_SIZE_1, DWT.NONE);
-		    chainText.setData(new Data("id", Integer.toString(id)));
-		    chainText.setText(name);
-		    chainText.setLayoutData(gdText);
-		    chainText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
-		    // Prevent default menu.
-		    chainText.setMenu(new Menu(chainText));
- 		    addChainNameModifyListener(chainText);
- 		    addChainMouseListener(chainText);
-		}
 
-		// Redraw parent container.
-		this._scc.setContent(this._chainEditList);
-		this._scc.setMinSize(this._chainEditList.computeSize(DWT.DEFAULT, DWT.DEFAULT));
+    /*
+      Show right-click / context menu for each chain.
+    */
+    private void addChainNameMenuListener(Text textInput)
+    {
+	textInput.addMenuDetectListener(new class(textInput) MenuDetectListener
+        {
+	    Text chainTxt;
+	    this(Text t)
+            {
+		this.chainTxt = textInput;
 	    }
-	});
+
+	    public void menuDetected(MenuDetectEvent event)
+            {
+                Menu menu = new Menu(this.chainTxt);
+                MenuItem item = new MenuItem(menu, DWT.NONE);
+                item.setText(REMOVE_TEXT ~ " " ~ this.chainTxt.getText);
+                this.chainTxt.setMenu(menu);
+                addChainNameMenuItemListener(item, this.chainTxt);
+            }
+        });
+    }
+
+
+    /*
+      Add new chain.
+     */
+    private void addChainMenuDetectListener(Label lChains, Composite chainEditList)
+    {
+	lChains.addMenuDetectListener(new class(lChains, chainEditList) MenuDetectListener
+	{
+            Label _lChains;
+            Composite _chainEditList;
+	    this(Label l, Composite c)
+	    {
+                this._lChains = lChains;
+		this._chainEditList = chainEditList;
+	    }
+	    public void menuDetected(MenuDetectEvent event)
+	    {
+                int id = Storage.addChain;
+                char[] name = CHAIN_TEXT ~ " " ~ Integer.toString(id + 1);
+                Storage.chainDesc(id, name);
+
+                GridData gdText = new GridData(CATEGORY_NAME_WIDTH, DWT.DEFAULT);
+                Text chainText = new Text(this._chainEditList, DWT.NONE);
+                setFont(chainText, FONT_SIZE_1, DWT.NONE);
+                chainText.setData(new Data("id", Integer.toString(id)));
+                chainText.setText(name);
+                chainText.setLayoutData(gdText);
+                chainText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+                // Prevent default menu.
+                chainText.setMenu(new Menu(chainText));
+                addChainNameModifyListener(chainText);
+                addChainMouseListener(chainText);
+                addChainNameMenuListener(chainText);
+
+                // Refresh chain list.
+                redrawParent(this._chainEditList);
+            }
+        });
     }
 
 
@@ -2047,13 +2169,6 @@ public class GUI
 	setFont(lChains, FONT_SIZE_1, DWT.BOLD);
         lChains.setText(CHAIN_TITLE_TEXT);
 
-	GridData gdChain2 = new GridData(ADD_REMOVE_BUTTON_WIDTH, ADD_REMOVE_BUTTON_HEIGHT);
-	Button chainAdd = new Button(chainsEditGroup, DWT.LEFT);
-	chainAdd.setLayoutData(gdChain2);
-	setFont(chainAdd, FONT_SIZE_2, DWT.BOLD);
-        chainAdd.setText(ADD_REMOVE_TEXT);
-	chainAdd.setToolTipText(ADD_REMOVE_BUTTON_TOOLTIP);
-
 	Composite c = new Composite(composite, DWT.NONE);
 	c.setLayout(new FillLayout(DWT.VERTICAL));
 	GridData gdc = new GridData(DWT.LEFT, DWT.TOP, true, true);
@@ -2068,8 +2183,8 @@ public class GUI
 	// Populate chain list box with saved user chains.
 	fillChainList(chainEditList);
 
-	// Add to or remove chain from chain list.
-	addChainToggleListener(chainAdd, chainEditList);
+	// Menu for adding chains.
+	addChainMenuDetectListener(lChains, chainEditList);
     }
 
 
