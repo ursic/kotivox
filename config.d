@@ -63,7 +63,6 @@ public const char[] OR_TEXT = "OR";
 public const char[] LOGIN_TEXT = "Login";
 public const char[] REGISTER_TEXT = "Register";
 public const char[] CANNOT_REGISTER = "I don't have enough data for registration.\nPlease enter username and matching passwords.";
-public const char[] NEW_TEXT = "NEW";
 public const char[] REMOVE_TEXT = "REMOVE";
 public const char[] CATEGORY_TEXT = "Category";
 public const char[] CATEGORIES_TEXT = "Categories";
