@@ -1178,6 +1178,25 @@ public class GUI
     }
 
 
+    private void addCategoryMouseListener(Text catText, Button catCheck)
+    {
+	catText.addMouseListener(new class(catCheck) MouseAdapter
+        {
+	    Button catChk;
+	    this(Button b)
+	    {
+		this.catChk = catCheck;
+	    }
+	    public void mouseDown(MouseEvent event)
+	    {
+                if(this.catChk.getSelection) this.catChk.setSelection(false);
+                else this.catChk.setSelection(true);
+
+            }
+        });
+    }
+
+
     private void addTextMenuListener()
     {
 	Menu menu = getTextPad.getMenu;
@@ -1712,6 +1731,7 @@ public class GUI
                 // Prevent default menu.
                 catText.setMenu(new Menu(catText));
                 addCategoryNameModifyListener(catText);
+                addCategoryMouseListener(catText, catCheck);
                 addCategoryNameMenuListener(catText);
 
                 // Add category to textPad's context menu.
@@ -1757,6 +1777,7 @@ public class GUI
 	    // Prevent default menu.
 	    catText.setMenu(new Menu(catText));
 	    addCategoryNameModifyListener(catText);
+            addCategoryMouseListener(catText, catChk);
             addCategoryNameMenuListener(catText);
 
 	    // Add category to textPad's context menu.
