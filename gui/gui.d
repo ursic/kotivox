@@ -253,8 +253,8 @@ public class GUI
 
     
     /*
-      Embolden calendar days containing text
-      Unmark all the rest
+      Embolden calendar days containing text.
+      Unmark all the rest.
      */
     private void markCalendarDays(DateTime calendar)
     {
@@ -315,8 +315,7 @@ public class GUI
 	MenuOption[] options;
 	foreach(opt; menuOptions)
 	{
-	    if(opt.id == option.id)
-		continue;
+	    if(opt.id == option.id) continue;
 	    options ~= opt;
 	}
 
@@ -330,7 +329,9 @@ public class GUI
      */
     private void updateMenu()
     {
+        StyledText txtPad = getTextPad;
 	Menu menu = getTextPad.getMenu;
+        if(menu is null) menu = new Menu(getTextPad);
 	foreach(item; menu.getItems) item.dispose;
 	MenuItem item;
 	foreach(option; menuOptions)
@@ -354,8 +355,10 @@ public class GUI
 	foreach(option; menuOptions)
 	{
 	    if(option.id != TIMESTAMP_ID)
+            {
 		if(show) option.show = true;
 		else option.show = false;
+            }
 	    mo ~= option;
 	}
 	menuOptions = mo;
@@ -731,6 +734,38 @@ public class GUI
 		this.txtPad.setFocus;
 	    }
 	});
+    }
+
+
+    private void addCalendarMenuDetectListener(DateTime calendar)
+    {
+	calendar.addMenuDetectListener(new class(calendar) MenuDetectListener
+        {
+            StyledText txtPad;
+            DateTime cal;
+	    this(DateTime dt)
+	    {
+	        this.txtPad = getTextPad;
+	        this.cal = calendar;
+	    }
+	    public void menuDetected(MenuDetectEvent event)
+	    {
+		if(this.txtPad.isDisposed) this.txtPad = getTextPad;
+
+		this.cal.setDay(1);
+		this.cal.setYear(today.year);
+		this.cal.setMonth(today.month - 1);
+		this.cal.setDay(today.day);
+		markCalendarDays(this.cal);
+		hideSearchChildren(this.txtPad.getParent);
+		saveText;
+		this.txtPad.setText(Storage.getText);
+		this.txtPad.setData(new Data("noteid", "-1"));
+		this.txtPad.setEditable(true);
+		this.txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
+		this.txtPad.setFocus;
+            }
+        });
     }
 
 
@@ -1460,39 +1495,6 @@ public class GUI
 	});
     }
 
-
-    private void addTodayButtonListener(Button button, DateTime calendar)
-    {
-	button.addSelectionListener(new class(calendar) SelectionAdapter
-	{
-	    DateTime cal;
-	    StyledText txtPad;
-	    this(DateTime d)
-	    {
-		this.cal = calendar;
-		this.txtPad = getTextPad;
-	    }
-	    // Doing it the long way, because setDate of DateTime
-	    // calls DateTime Selection listener twice for some reason.
-	    public void widgetSelected(SelectionEvent event)
-	    {
-		if(this.txtPad.isDisposed) this.txtPad = getTextPad;
-
-		this.cal.setDay(1);
-		this.cal.setYear(today.year);
-		this.cal.setMonth(today.month - 1);
-		this.cal.setDay(today.day);
-		markCalendarDays(this.cal);
-		hideSearchChildren(this.txtPad.getParent);
-		saveText;
-		this.txtPad.setText(Storage.getText);
-		this.txtPad.setData(new Data("noteid", "-1"));
-		this.txtPad.setEditable(true);
-		this.txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
-		this.txtPad.setFocus;
-	    }
-	});
-    }
 
     /*
       Store note name when modified.
@@ -2237,15 +2239,6 @@ public class GUI
         calendar.setLayoutData(calendarData);
 	markCalendarDays(calendar);
 
-	// Today button.
-	GridData gdButtonToday = new GridData(MAIN_WINDOW_LEFT_COLUMN_WIDTH, DWT.DEFAULT);
-	Button bToday = new Button(leftComposite, DWT.BORDER);
-        gdButtonToday.verticalAlignment = DWT.CENTER;
-	gdButtonToday.heightHint = MAIN_WINDOW_LEFT_COLUMN_BUTTON_HEIGHT;
-	setFont(bToday, FONT_SIZE_3, DWT.BOLD);
-	bToday.setText(TODAY_TEXT);
-        bToday.setLayoutData(gdButtonToday);
-
 	// Big text field on the right.
 	StyledText textPad = drawTextPad(rightComposite);
 
@@ -2294,7 +2287,7 @@ public class GUI
 	});
 
 	addCalendarListener(calendar);
-	addTodayButtonListener(bToday, calendar);
+	addCalendarMenuDetectListener(calendar);
 	addTextPadListeners(textPad, calendar);
 	addTextSearchKeyListener(rightComposite, textSearch, catEditList, calendar);
 
@@ -2313,10 +2306,7 @@ public class GUI
 	while(!this.shell.isDisposed)
 	{
 	    if(!this.display.readAndDispatch)
-	    {
-		// Auto-save trap.
 		this.display.sleep;
-	    }
 	}
 
 	this.display.dispose;
