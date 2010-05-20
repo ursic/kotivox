@@ -1739,6 +1739,7 @@ public class GUI
                 setFont(catText, FONT_SIZE_1, DWT.NONE);
                 catText.setData(new Data("id", id));
                 catText.setText(name);
+                catText.setToolTipText(REMOVE_TOOLTIP_TEXT);
                 catText.setLayoutData(gdText);
                 catText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
                 // Prevent default menu.
@@ -1786,6 +1787,7 @@ public class GUI
 	    catText.setLayoutData(gdCatName);
 	    catText.setData(new Data("id", id));
 	    catText.setText(name);
+            catText.setToolTipText(REMOVE_TOOLTIP_TEXT);
 	    catText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
 	    // Prevent default menu.
 	    catText.setMenu(new Menu(catText));
@@ -1817,6 +1819,7 @@ public class GUI
 	setFont(catCheck, FONT_SIZE_1, DWT.BOLD);
 	catCheck.setSelection(true);
         catCheck.setText(CATEGORIES_TEXT);
+        catCheck.setToolTipText(NEW_TOOLTIP_TEXT);
 
 	Composite c = new Composite(composite, DWT.NONE);
 	c.setLayout(new FillLayout(DWT.VERTICAL));
@@ -1856,6 +1859,7 @@ public class GUI
 	    noteText.setLayoutData(gdNoteName);
 	    noteText.setData(new Data("id", Integer.toString(id)));
 	    noteText.setText(name);
+	    noteText.setToolTipText(REMOVE_TOOLTIP_TEXT);
 	    noteText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
 	    // Prevent default menu.
 	    noteText.setMenu(new Menu(noteText));
@@ -1960,6 +1964,7 @@ public class GUI
                 setFont(noteText, FONT_SIZE_1, DWT.NONE);
                 noteText.setData(new Data("id", id));
                 noteText.setText(name);
+                noteText.setToolTipText(REMOVE_TOOLTIP_TEXT);
                 noteText.setLayoutData(gdText);
                 noteText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
                 // Prevent default menu.
@@ -1989,6 +1994,7 @@ public class GUI
 	lNotes.setLayoutData(gdNote1);
 	setFont(lNotes, FONT_SIZE_1, DWT.BOLD);
         lNotes.setText(NOTES_TEXT);
+        lNotes.setToolTipText(NEW_TOOLTIP_TEXT);
 
 	Composite n = new Composite(composite, DWT.NONE);
 	n.setLayout(new FillLayout(DWT.VERTICAL));
@@ -2070,6 +2076,7 @@ public class GUI
 	    chainText.setLayoutData(gdChainName);
 	    chainText.setData(new Data("id", Integer.toString(id)));
 	    chainText.setText(name);
+	    chainText.setToolTipText(REMOVE_TOOLTIP_TEXT);
 	    chainText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
 	    // Prevent default menu.
 	    chainText.setMenu(new Menu(chainText));
@@ -2176,6 +2183,7 @@ public class GUI
                 setFont(chainText, FONT_SIZE_1, DWT.NONE);
                 chainText.setData(new Data("id", Integer.toString(id)));
                 chainText.setText(name);
+                chainText.setToolTipText(REMOVE_TOOLTIP_TEXT);
                 chainText.setLayoutData(gdText);
                 chainText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
                 // Prevent default menu.
@@ -2204,6 +2212,7 @@ public class GUI
 	lChains.setLayoutData(gdChain1);
 	setFont(lChains, FONT_SIZE_1, DWT.BOLD);
         lChains.setText(CHAIN_TITLE_TEXT);
+        lChains.setToolTipText(NEW_TOOLTIP_TEXT);
 
 	Composite c = new Composite(composite, DWT.NONE);
 	c.setLayout(new FillLayout(DWT.VERTICAL));
@@ -2272,6 +2281,7 @@ public class GUI
 	calendarData.heightHint = MAIN_WINDOW_CALENDAR_HEIGHT;
         calendar.setLayoutData(calendarData);
 	markCalendarDays(calendar);
+        calendar.setToolTipText(CALENDAR_TOOLTIP_TEXT);
 
 	// Big text field on the right.
 	StyledText textPad = drawTextPad(rightComposite);

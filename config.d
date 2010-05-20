@@ -116,3 +116,7 @@ public const int CHAIN_DESCRIPTION_INPUT_HEIGHT = 100;
 public const int CHAIN_BUTTON_SIZE = 26;
 // Half thickness of mark stroke in percent.
 public const float CHAIN_MARK_STROKE_HALF_THICKNESS = 0.18;
+
+public const char[] CALENDAR_TOOLTIP_TEXT = "Right-click for today";
+public const char[] NEW_TOOLTIP_TEXT = "Right-click for new";
+public const char[] REMOVE_TOOLTIP_TEXT = "Right-click to remove";
