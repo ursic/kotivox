@@ -849,7 +849,11 @@ public class GUI
 	    public void modifyText(ModifyEvent event)
 	    {
 		this.txtPad.clearSelection(false);
-		if(this.fnd.getText.length < 3) return;
+		if(this.fnd.getText.length < 3)
+                {
+                    this.fnd.setData(new Data("find", ""));
+                    return;
+                }
 
 		char[] text = this.txtPad.getText;
 		char[] keywords = this.fnd.getText;
@@ -897,7 +901,9 @@ public class GUI
                    (event.keyCode == KEY_KP_ENTER) ||
                     (event.keyCode == KEY_F3))
 		{
-		    char[] find = (cast(Data)this.fnd.getData).get("find");
+                    Data data = cast(Data)this.fnd.getData;
+                    if(!data) return;
+		    char[] find = data.get("find");
 		    char[][] finds = Txt.split(find, " ");
 
 		    if(finds.length <= 2) return;
