@@ -71,6 +71,7 @@ public const char[] SAVE_CLOSE_TEXT = "Save && Close";
 
 public const int KEY_ENTER = 13;
 public const int KEY_KP_ENTER = 16777296;
+public const int KEY_F3 = 16777228;
 public const int KEY_ESC = 27;
 public const int KEY_F = 102;
 public const int KEY_R = 114;

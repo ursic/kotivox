@@ -893,7 +893,9 @@ public class GUI
 	    public void keyPressed(KeyEvent event)
 	    {
 		// Mark next match.
-		if((event.keyCode == KEY_ENTER) || (event.keyCode == KEY_KP_ENTER))
+		if((event.keyCode == KEY_ENTER) ||
+                   (event.keyCode == KEY_KP_ENTER) ||
+                    (event.keyCode == KEY_F3))
 		{
 		    char[] find = (cast(Data)this.fnd.getData).get("find");
 		    char[][] finds = Txt.split(find, " ");
@@ -907,7 +909,11 @@ public class GUI
 
 		    // Mark previous match.
 		    if((event.stateMask == DWT.SHIFT) &&
-		       (event.keyCode == KEY_ENTER || event.keyCode == KEY_KP_ENTER))
+                       (event.keyCode == KEY_ENTER ||
+                        event.keyCode == KEY_KP_ENTER)
+                       ||
+                       (event.stateMask == DWT.SHIFT) &&
+		       (event.keyCode == KEY_F3))
 			newFinds = rotateRight(finds);
 
 		    int start = Integer.toInt(newFinds[0]);
@@ -957,7 +963,8 @@ public class GUI
 
 		// Emerge small text input beneath text pad for
 		// incremental find in currently displayed text
-		if((event.stateMask == DWT.CTRL) && (event.keyCode == KEY_F))
+		if((event.stateMask == DWT.CTRL) && (event.keyCode == KEY_F) ||
+                   (event.keyCode == KEY_F3))
 		    drawIncrementalFindInput(this.txtPad);
 
 		// Refresh text pad content - DEBUG
