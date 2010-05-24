@@ -4,6 +4,8 @@ import tango.stdc.math;
 import tango.core.Array;
 import tango.time.chrono.Gregorian;
 
+import tango.io.Stdout;
+
 public import gui.util;
 import util;
 import storage;
@@ -252,6 +254,7 @@ private void drawChainYear(Canvas canvas)
     int x = 0;
     int y = 0;
     int width = canvas.getSize.x;
+    int headerHeight = 40;
 
     // Draw year number in the middle.
     char[] yearStr = Integer.toString(cd.year);
@@ -285,10 +288,8 @@ private void drawChainYear(Canvas canvas)
     {
 	date = yearDayToDate(i, cd.year);
 
-	// Stop at current month for current year.
-	if((today.year <= cd.year) &&
-	   (today.month < date.month))
-	    break;
+	// Stop drawing at today.
+        if(today < date) break;
 
 	// Vertical space after each month.
 	if((1 == date.day) && (dayOffset < i))
@@ -300,7 +301,7 @@ private void drawChainYear(Canvas canvas)
 	    // Set scroll point to the beginning of current month.
 	    if((today.year == date.year) &&
 	       (today.month == date.month))
-		if(-1 == cd.todayOrigin) cd.todayOrigin = marginTop - 30;
+		if(-1 == cd.todayOrigin) cd.todayOrigin = marginTop - (headerHeight - 10);
 
 	    char[] monthName = dateFormat("%B", date);
 	    gc.setFont(getFont(width / 5, DWT.NONE));
@@ -328,7 +329,7 @@ private void drawChainYear(Canvas canvas)
 		gc.drawText(dayNames[j], xt, yt, true);
 		xr += width;
 	    }
-	    marginTop += height + 40;
+	    marginTop += height + headerHeight;
 	}
 
 	// Draw day numbers.
@@ -344,13 +345,15 @@ private void drawChainYear(Canvas canvas)
 	}
 
 	// New line every Monday.
-	if(1 == Integer.toInt(dateFormat("%w", date)) && (1 != date.day))
+	if(1 == Integer.toInt(dateFormat("%w", date)) &&
+           (1 != date.day) &&
+           (cd.start.day != date.day))
 	{
 	    xDate = x;
 	    marginTop += height;
 	}
 
-	yDate = marginTop - 40;
+	yDate = marginTop - headerHeight;
 
 	Day day = Day.add(date, xDate, yDate, width, height);
 	if(contains(chainDates, Integer.toInt(dateStr(date))))
@@ -360,7 +363,7 @@ private void drawChainYear(Canvas canvas)
     }
 
     gc.dispose;
-    (cast(GridData)canvas.getLayoutData).heightHint = marginTop + 160;
+    (cast(GridData)canvas.getLayoutData).heightHint = marginTop + (headerHeight * 4);
 
     Composite c = canvas.getParent;
     ScrolledComposite sc = cast(ScrolledComposite)c.getParent;
