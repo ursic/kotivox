@@ -4,8 +4,6 @@ import tango.stdc.math;
 import tango.core.Array;
 import tango.time.chrono.Gregorian;
 
-import tango.io.Stdout;
-
 public import gui.util;
 import util;
 import storage;
