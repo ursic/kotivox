@@ -60,6 +60,7 @@ private class Day
     private static void loadDays()
     {
 	// Gather all day files for this user.
+        days = null;
 	foreach(file; (new FileScan)(Auth.userDirPath, USER_DAY_FILE_EXTENSION).files)
 	{
 	    // Decrypt text and store it.
@@ -164,6 +165,7 @@ private class Category
 	    new_categories ~= category;
 	}
 	categories = new_categories;
+        catRetrCount = categories.length;
     }
 
     private static void categoryName(int id, char[] name)
@@ -227,6 +229,7 @@ private class Category
 
 	Category.origDigest = digest(content);
 
+        categories = null;
 	foreach(char[] id, char[] name; parseLines(content))
 	    categories ~= new Category(Integer.toInt(id), name);
 
@@ -661,6 +664,7 @@ private class Note
      */
     private static void loadNotes()
     {
+        notes = null;
 	foreach(file; (new FileScan)(Auth.userDirPath, NOTE_FILE_EXTENSION).files)
 	{
 	    // Decrypt text and store it.
@@ -974,6 +978,7 @@ private class Chain
      */
     private static void loadChains()
     {
+        chains = null;
 	foreach(file; (new FileScan)(Auth.userDirPath, CHAIN_FILE_EXTENSION).files)
 	{
 	    // Decrypt text and store it.

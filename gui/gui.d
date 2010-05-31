@@ -974,12 +974,10 @@ public class GUI
 		    drawIncrementalFindInput(this.txtPad);
 
 		// Refresh text pad content - DEBUG
-		if(this.txtPad.getEditable &&
-		   ((event.stateMask == DWT.CTRL) && (event.keyCode == KEY_R)))
+		if((event.stateMask == DWT.CTRL) && (event.keyCode == KEY_R))
 		{
- 		    this.txtPad.setText(Storage.getText);
-		    this.txtPad.setData(new Data("noteid", "-1"));
- 		    this.txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
+                    Storage.loadUserData;
+                    drawMainWindow(this.txtPad.getShell);
 		}
 	    }
 	    public void keyReleased(KeyEvent event){}
