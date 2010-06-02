@@ -3,7 +3,7 @@
  *   Kotivox
  * 
  *   Copyright 2009 Mitja Ursic
- *   mitja_ursic@yahoo.com
+ *   odtihmal@gmail.com
  * 
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -383,7 +383,11 @@ public class GUI
 	    char[][] userData = [this.authValues["usernameL"],
 				 this.authValues["passwordL"]];
 	    char[] errorMsg;
-	    if(Auth.login(userData, errorMsg)) drawMainWindow(shell);
+	    if(Auth.login(userData, errorMsg))
+            {
+                drawMainWindow(shell);
+                addDisplayListener(Display.getCurrent);
+            }
 	    else msgLabel.setText(errorMsg);
 	}
     }
@@ -399,7 +403,11 @@ public class GUI
 				 this.authValues["passwordR"],
 				 this.authValues["passwordRR"]];
 	    char[] errorMsg;
-	    if(Auth.register(userData, errorMsg)) drawMainWindow(shell);
+	    if(Auth.register(userData, errorMsg))
+            {
+                drawMainWindow(shell);
+                addDisplayListener(Display.getCurrent);
+            }
 	    else msgLabel.setText(errorMsg);
 	}
 	else msgLabel.setText(CANNOT_REGISTER);
@@ -417,6 +425,45 @@ public class GUI
             sc.setExpandHorizontal(true);
             sc.setExpandVertical(true);
         }
+    }
+
+
+    private void addDisplayListener(Display display)
+    {
+        display.addFilter(DWT.KeyDown, new class(display) Listener
+        {
+            this(Display d){}
+            public void handleEvent(Event event)
+            {
+		// Save all changes.
+		if((event.stateMask == DWT.CTRL) &&
+                   (event.keyCode == KEY_S))
+		{
+		    saveText;
+		    Storage.saveFinal;
+		}
+
+                // Set focus to search input field.
+                if((event.stateMask == DWT.CTRL) &&
+                   ((event.keyCode == KEY_E) || (event.keyCode == KEY_K)))
+                {
+                    // The only Text widget in the left group is the search widget.
+                    foreach(child; getShellGroup(LEFT_GROUP).getChildren)
+                    {
+                        if("Text" == child.getName)
+                            child.forceFocus; // Why setFocus won't work?
+                    }
+                }
+
+		// Revert all changes since app was started.
+		if((event.stateMask == DWT.CTRL) &&
+                   (event.keyCode == KEY_R))
+		{
+                    Storage.loadUserData;
+                    drawMainWindow(Display.getCurrent.getActiveShell);
+		}
+            } 
+        });
     }
 
 
@@ -959,26 +1006,11 @@ public class GUI
 	    }
 	    public void keyPressed(KeyEvent event)
 	    {
-		// Save encrypted text to file when "CTRL + S" pressed
-		if(this.txtPad.getEditable &&
-		   ((event.stateMask == DWT.CTRL) && (event.keyCode == KEY_S)))
-		{
-		    saveText;
-		    Storage.saveFinal;
-		}
-
 		// Emerge small text input beneath text pad for
-		// incremental find in currently displayed text
+		// incremental find in currently displayed text.
 		if((event.stateMask == DWT.CTRL) && (event.keyCode == KEY_F) ||
                    (event.keyCode == KEY_F3))
 		    drawIncrementalFindInput(this.txtPad);
-
-		// Refresh text pad content - DEBUG
-		if((event.stateMask == DWT.CTRL) && (event.keyCode == KEY_R))
-		{
-                    Storage.loadUserData;
-                    drawMainWindow(this.txtPad.getShell);
-		}
 	    }
 	    public void keyReleased(KeyEvent event){}
 	});
@@ -1520,6 +1552,27 @@ public class GUI
 
 		    drawSearchResultsWindow(searchResults, this.txtPad, this.cal);
 		}
+
+                // Close search results.
+		if(event.keyCode == KEY_ESC)
+                {
+                    // Blindly retrieve link instance from search results.
+                    Link link;
+                    foreach(child; getShellGroup(RIGHT_GROUP).getChildren)
+                    {
+                        if("ScrolledComposite" == child.getName)
+                            link = cast(Link)(cast(Composite)(cast(ScrolledComposite)child)
+                                              .getChildren[0]).getChildren[0];
+                    }
+
+                    // No valid link widget.
+                    if(!link) return;
+
+                    // Send an event to the link widget to close search results.
+                    Event close = new Event;
+                    close.text = "CLOSE";
+                    link.notifyListeners(DWT.Selection, close);
+                }
 	    }
 	    public void keyReleased(KeyEvent event){}
 	});
@@ -1656,7 +1709,7 @@ public class GUI
 		this.txtSearch = textSearch;
 		this.txtPad = textPad;
 	    }
-	    // remove "Search..." text on first focus
+	    // Remove "Search..." text on first focus.
 	    public void focusGained(FocusEvent event)
 	    {
 		if("0" == (cast(Data)this.txtSearch.getData).get("used"))

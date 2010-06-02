@@ -3,7 +3,7 @@
  *   Kotivox
  * 
  *   Copyright 2009 Mitja Ursic
- *   mitja_ursic@yahoo.com
+ *   odtihmal@gmail.com
  * 
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -360,7 +360,7 @@ private class SearchResultPage
 	foreach(range; Day.getCategoryRanges(day.name))
 	{
 	    int bold = range[2];
-	    // at category title
+	    // At category title.
 	    if(1 == bold)
 	    {
 		title = day.text[range[0]..range[0] + range[1]];
@@ -376,8 +376,8 @@ private class SearchResultPage
 			  start = range[0];
 		}
 	    }
-	    // at category body
-	    // and end only if start is valid
+	    // At category body.
+	    // And end only if start is valid.
 	    else if((0 == bold) && (-1 < start))
 	    {
 		int tempEnd = start + title.length + range[1];
@@ -386,8 +386,8 @@ private class SearchResultPage
 
 	    if((-1 < start) && (0 < end))
 	    {
-		// split category names and add them among
-		// day categories
+		// Split category names and add them among
+		// day categories.
 		foreach(name; Txt.split(title, ","))
 		{
 		    int catID = Storage.getCategoryID(name);
@@ -1096,7 +1096,7 @@ public class Storage
 	    rangesTxt ~= Integer.toString(c[2]) ~ "\n";
 	}
 
-	// encrypt category ranges into file
+	// Encrypt category ranges into file.
 	k_encrypt_from_string(rangesTxt,
 			      catRangesFileName,
 			      Auth.cipherKey);
@@ -1343,9 +1343,4 @@ public class Storage
     {
 	return Chain.isLocked(chainID);
     }
-
-//     static public void saveChains()
-//     {
-// 	Chain.saveChains;
-//     }
 }

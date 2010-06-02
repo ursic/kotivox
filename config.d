@@ -3,7 +3,7 @@
  *   Kotivox
  * 
  *   Copyright 2009 Mitja Ursic
- *   mitja_ursic@yahoo.com
+ *   odtihmal@gmail.com
  * 
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -73,7 +73,9 @@ public const int KEY_ENTER = 13;
 public const int KEY_KP_ENTER = 16777296;
 public const int KEY_F3 = 16777228;
 public const int KEY_ESC = 27;
+public const int KEY_E = 101;
 public const int KEY_F = 102;
+public const int KEY_K = 107;
 public const int KEY_R = 114;
 public const int KEY_S = 115;
 
