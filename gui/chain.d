@@ -489,21 +489,7 @@ void drawChainWindow(int id)
     cd.start = Storage.getChainStartDate(cd.id);
     cd.year = today.year;
 
-    // Retrieve right composite.
-    Shell shell = Display.getCurrent.getShells[0];
-
-    Composite rightGroup;
-    foreach(child; shell.getChildren)
-    {
-	Data data = cast(Data)child.getData;
-	if(data && (RIGHT_GROUP == data.get("name")))
-	{
-	    rightGroup = cast(Composite)child;
-	    break;
-	}
-    }
-
-    // Clean up the composite.
+    Composite rightGroup = getShellGroup(RIGHT_GROUP);
     foreach(child; rightGroup.getChildren) child.dispose;
 
     // Chain description.
