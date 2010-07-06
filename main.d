@@ -26,8 +26,6 @@ import auth;
 import gui.gui;
 import io;
 
-import tango.io.Stdout;
-
 void main()
 {
     setAppDirs;
