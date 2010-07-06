@@ -72,7 +72,7 @@ public class GUI
     public this()
     {
 	this.display = new Display;
-	this.shell = new Shell(display);
+        this.shell = new Shell(display);
 
 	this.shell.setText = APP_NAME;
 	this.shell.setMaximized = true;

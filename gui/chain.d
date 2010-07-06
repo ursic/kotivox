@@ -366,7 +366,7 @@ private void drawChainYear(Canvas canvas)
 	// New line every Monday.
 	if(1 == Integer.toInt(dateFormat("%w", date)) &&
            (1 != date.day) &&
-           (cd.start.day != date.day))
+           (cd.start != date))
 	{
 	    xDate = x;
 	    marginTop += height;
