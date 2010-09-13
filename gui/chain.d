@@ -511,7 +511,7 @@ void drawChainWindow(int id)
     Composite c = new Composite(sc, DWT.BORDER);
     c.setLayout(new GridLayout(1, false));
     c.setBackgroundMode(DWT.INHERIT_DEFAULT);
-    c.setBackground(getColor(CHAIN_BACKROUNG_COLOR));
+    c.setBackground(getColor(CHAIN_BACKGROUND_COLOR));
 
     Canvas canvas = new Canvas(c, DWT.NONE);
     canvas.setLayoutData(new GridData(DWT.FILL, DWT.FILL, true, true));
