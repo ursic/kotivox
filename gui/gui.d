@@ -719,8 +719,8 @@ public class GUI
 
     private void setShellSize(in Shell shell)
     {
-	int height = Integer.convert(getConfig("windowHeight"));
-	int width = Integer.convert(getConfig("windowWidth"));
+       int height = cast(int)Integer.convert(getConfig("windowHeight"));
+       int width = cast(int)Integer.convert(getConfig("windowWidth"));
 
 	if(0 == height)
 	{

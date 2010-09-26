@@ -44,6 +44,8 @@ private struct Date
 	if(elapsed(&date) < elapsed(this)) return 1;
 	if(elapsed(&date) > elapsed(this)) return -1;
 	if(elapsed(&date) == elapsed(this)) return 0;
+        
+        return -2;
     }
 }
 private const static Date date;
