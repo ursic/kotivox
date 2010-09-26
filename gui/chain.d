@@ -94,8 +94,7 @@ private void drawDate(GC gc,
 	gc.setForeground(Display.getCurrent.getSystemColor(DWT.COLOR_BLUE));
     }
 
-    gc.setFont(getFont(fontSize, style));
-
+    setFont(gc, fontSize, style);
     char[] dateStr = Txt.stripl(Integer.toString(date.day), '0');
 
     Point extent = gc.stringExtent(dateStr);
@@ -277,7 +276,7 @@ private void drawChainYear(Canvas canvas)
 
     // Draw year number in the middle.
     char[] yearStr = Integer.toString(cd.year);
-    gc.setFont(getFont(width / 24, DWT.NONE));
+    setFont(gc, width / 24, DWT.NONE);
     Point extent = gc.stringExtent(yearStr);
     // Bottom edge of current content.
     // As more stuff is drawn, marginTop increases.
@@ -323,13 +322,13 @@ private void drawChainYear(Canvas canvas)
 		if(-1 == cd.todayOrigin) cd.todayOrigin = marginTop - (headerHeight - 10);
 
 	    char[] monthName = dateFormat("%B", date);
-	    gc.setFont(getFont(width / 5, DWT.NONE));
+            setFont(gc, width / 5, DWT.NONE);
 	    extent = gc.stringExtent(monthName);
 	    gc.drawText(monthName, x, marginTop, true);
 	    marginTop += extent.y;
 
 	    // Draw weekday names.
-	    gc.setFont(getFont(width / 9, DWT.NONE));
+            setFont(gc, width / 9, DWT.NONE);
 
 	    int height = width / 6;
 	    int xr = x;
@@ -499,7 +498,7 @@ void drawChainWindow(int id)
     gdt.heightHint = CHAIN_DESCRIPTION_INPUT_HEIGHT;
     text.setLayoutData(gdt);
     text.setText(Storage.chainDesc(cd.id));
-    text.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+    text.setBackground(Display.getCurrent.getSystemColor(DWT.COLOR_WIDGET_BACKGROUND));
     setFont(text, FONT_SIZE_3, DWT.NONE);
     if(Storage.isChainLocked(cd.id)) text.setEditable(false);
     addChainDescriptionListener(text);

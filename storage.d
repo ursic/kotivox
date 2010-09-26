@@ -463,7 +463,9 @@ private class SearchResultPage
 		    if(0 <= (location - appendLength))
 		    {
 			head = day.text[location - appendLength..location];
-			head = head[find(head, " ") + 1..$];
+                        
+                        int start = find(head, " ") + 1;
+                        if(start < head.length) head = head[start..$];
 		    }
 
 		    core = day.text[location..location + keywordStr.length];

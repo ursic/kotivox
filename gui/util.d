@@ -106,28 +106,14 @@ public class Data
 
 
 /*
-  Return required font.
+  Set font in given control.
 */
-Font getFont(int size, int style)
+void setFont(T)(T control, int size, int style)
 {
-    Font font = new Font(Display.getCurrent,
+    control.setFont(new Font(Display.getCurrent,
 			 new FontData(FONT_FACE_1,
 				      size,
-				      style));
-    return font;
-}
-
-
-/*
-  Set control font
-*/
-void setFont(Control control, int size, int style)
-{
-    Font font = new Font(Display.getCurrent,
-			 new FontData(FONT_FACE_1,
-				      size,
-				      style));
-    control.setFont(font);
+				      style)));
 }
 
 
@@ -154,15 +140,11 @@ Color getColor(char[] colorSetting)
 Composite getShellGroup(char[] groupName)
 {
     Shell shell = Display.getCurrent.getShells[0];
-    Composite shellGroup;
     foreach(child; shell.getChildren)
     {
 	Data data = cast(Data)child.getData;
 	if(data && (groupName == data.get("name")))
-	{
-	    shellGroup = cast(Composite)child;
-	    break;
-	}
+	    return cast(Composite)child;
     }
-    return shellGroup;
+    return null;
 }

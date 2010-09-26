@@ -1792,7 +1792,7 @@ public class GUI
                 catText.setText(name);
                 catText.setToolTipText(REMOVE_TOOLTIP_TEXT);
                 catText.setLayoutData(gdText);
-                catText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+                catText.setBackground(Display.getCurrent.getSystemColor(DWT.COLOR_WIDGET_BACKGROUND));
                 // Prevent default menu.
                 catText.setMenu(new Menu(catText));
                 addCategoryNameModifyListener(catText);
@@ -1839,7 +1839,7 @@ public class GUI
 	    catText.setData(new Data("id", id));
 	    catText.setText(name);
             catText.setToolTipText(REMOVE_TOOLTIP_TEXT);
-	    catText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+	    catText.setBackground(Display.getCurrent.getSystemColor(DWT.COLOR_WIDGET_BACKGROUND));
 	    // Prevent default menu.
 	    catText.setMenu(new Menu(catText));
 	    addCategoryNameModifyListener(catText);
@@ -1911,7 +1911,7 @@ public class GUI
 	    noteText.setData(new Data("id", Integer.toString(id)));
 	    noteText.setText(name);
 	    noteText.setToolTipText(REMOVE_TOOLTIP_TEXT);
-	    noteText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+	    noteText.setBackground(Display.getCurrent.getSystemColor(DWT.COLOR_WIDGET_BACKGROUND));
 	    // Prevent default menu.
 	    noteText.setMenu(new Menu(noteText));
 	    addNoteNameModifyListener(noteText);
@@ -2017,7 +2017,7 @@ public class GUI
                 noteText.setText(name);
                 noteText.setToolTipText(REMOVE_TOOLTIP_TEXT);
                 noteText.setLayoutData(gdText);
-                noteText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+                noteText.setBackground(Display.getCurrent.getSystemColor(DWT.COLOR_WIDGET_BACKGROUND));
                 // Prevent default menu.
                 noteText.setMenu(new Menu(noteText));
                 Storage.noteContent(Integer.toInt(id), name);
@@ -2128,7 +2128,7 @@ public class GUI
 	    chainText.setData(new Data("id", Integer.toString(id)));
 	    chainText.setText(name);
 	    chainText.setToolTipText(REMOVE_TOOLTIP_TEXT);
-	    chainText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+	    chainText.setBackground(Display.getCurrent.getSystemColor(DWT.COLOR_WIDGET_BACKGROUND));
 	    // Prevent default menu.
 	    chainText.setMenu(new Menu(chainText));
  	    addChainNameModifyListener(chainText);
@@ -2236,7 +2236,7 @@ public class GUI
                 chainText.setText(name);
                 chainText.setToolTipText(REMOVE_TOOLTIP_TEXT);
                 chainText.setLayoutData(gdText);
-                chainText.setBackground(getColor(CATEGORY_LIST_BACKGROUND_COLOR));
+                chainText.setBackground(Display.getCurrent.getSystemColor(DWT.COLOR_WIDGET_BACKGROUND));
                 // Prevent default menu.
                 chainText.setMenu(new Menu(chainText));
                 addChainNameModifyListener(chainText);

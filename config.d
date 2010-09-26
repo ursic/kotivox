@@ -53,7 +53,6 @@ public const USER_DAY_FILE_EXTENSION = ".kt";
 public const USER_CATEGORY_RANGES_FILE_EXTENSION = ".kcr";
 public const USER_CATEGORIES_FILE = "catnames.kc";
 public const USER_CATEGORY_BACKGROUND_COLOR_SETTING_NAME = "categoryBackgroundColor";
-public const CATEGORY_LIST_BACKGROUND_COLOR = "239 239 239";
 public const USER_CATEGORY_BACKGROUND_COLOR = "231 239 255";
 
 public const USERNAME_TEXT = "Username:";
