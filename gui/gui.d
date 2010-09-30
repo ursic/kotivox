@@ -279,20 +279,23 @@ public class GUI
     private void saveText()
     {
 	StyledText txtPad = getTextPad;
-	int id = Integer.toInt((cast(Data)txtPad.getData).get("noteid"));
-	// Invalid note ID indicates day text, so we save to today's day.
-	if(-1 == id)
+	char[] dayName = (cast(Data)txtPad.getData).get("dayname");
+
+	// Valid day name is 8 characters long.
+	if(8 == dayName.length)
 	{
-	    if(!txtPad.getEditable) return;
-	    Storage.saveText(txtPad.getText);
-	    Storage.setCategoryRanges(null, styleRangesToCategoryRanges(txtPad.getStyleRanges));
+	    Storage.saveText(dayName, txtPad.getText);
+	    Storage.setCategoryRanges(dayName, styleRangesToCategoryRanges(txtPad.getStyleRanges));
 	}
-	else if(0 <= id)
-	    Storage.noteContent(id, txtPad.getText);
+	else
+        {
+            int noteID = Integer.toInt((cast(Data)txtPad.getData).get("noteid"));
+            Storage.noteContent(noteID, txtPad.getText);
+        }
     }
 
     
-    private void hideSearchChildren(Composite parent)
+    private void disposeSearchChildren(Composite parent)
     {
 	foreach(child; parent.getChildren)
 	    if(("ScrolledComposite" == child.getName) || "Text" == child.getName)
@@ -428,6 +431,9 @@ public class GUI
     }
 
 
+    /*
+      Application-wide keyboard listeners.
+     */
     private void addDisplayListener(Display display)
     {
         display.addFilter(DWT.KeyDown, new class(display) Listener
@@ -733,6 +739,9 @@ public class GUI
     }
 
 
+    /*
+      Show text for selected day on the calendar.
+     */
     private void addCalendarListener(DateTime calendar)
     {
 	calendar.addSelectionListener(new class(calendar) SelectionAdapter
@@ -751,32 +760,17 @@ public class GUI
 		if(this.txtPad.isDisposed) this.txtPad = getTextPad;
 
 		markCalendarDays(this.cal);
-
-		char[] date = Integer.toString(this.cal.getDay) ~ "-";
-		date ~= Integer.toString(this.cal.getMonth + 1) ~ "-";
-		date ~= Integer.toString(this.cal.getYear);
-
-		char[] todayStr = Integer.toString(today.day) ~ "-";
-		todayStr ~= Integer.toString(today.month) ~ "-";
-		todayStr ~= Integer.toString(today.year);
-
 		saveText;
+		disposeSearchChildren(this.txtPad.getParent);
 
-		// Allow editing of today's entry only.
-		if(todayStr == date)
-		{
-		    this.txtPad.setEditable(true);
-		    this.txtPad.setMenu(getTextPad.getMenu);
-		}
-		else
-		{
-		    this.txtPad.setEditable(false);
-		    this.txtPad.setMenu(null);
-		}
+                // Kotivox is not a scheduler, don't allow future inputs.
+                if(today < dateStrToDate(dateStr(this.cal)))
+                   this.txtPad.setEditable(false);
+                else this.txtPad.setEditable(true);
 
-		hideSearchChildren(this.txtPad.getParent);
+                this.txtPad.setMenu(getTextPad.getMenu);
 		this.txtPad.setText(Storage.getText(this.cal));
-		this.txtPad.setData(new Data("noteid", "-1"));
+		this.txtPad.setData(new Data("dayname", dateStr(this.cal)));
 		this.txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges(this.cal)));
 		this.txtPad.setFocus;
 	    }
@@ -784,6 +778,9 @@ public class GUI
     }
 
 
+    /*
+      Show today's text when right-click on calendar is detected.
+     */
     private void addCalendarMenuDetectListener(DateTime calendar)
     {
 	calendar.addMenuDetectListener(new class(calendar) MenuDetectListener
@@ -804,11 +801,11 @@ public class GUI
 		this.cal.setMonth(today.month - 1);
 		this.cal.setDay(today.day);
 		markCalendarDays(this.cal);
-		hideSearchChildren(this.txtPad.getParent);
+		disposeSearchChildren(this.txtPad.getParent);
 		saveText;
+                this.txtPad.setEditable(true);
 		this.txtPad.setText(Storage.getText);
-		this.txtPad.setData(new Data("noteid", "-1"));
-		this.txtPad.setEditable(true);
+		this.txtPad.setData(new Data("dayname", dateStr(today)));
 		this.txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
 		this.txtPad.setFocus;
             }
@@ -834,14 +831,14 @@ public class GUI
             {
 		StyleRange newStyle;
 
-		// pick up style left from new text
+		// Pick up style to the left of new text.
  		if((0 < event.start) && this.txtPad.getStyleRangeAtOffset(event.start - 1))
 		{
 		    newStyle = this.txtPad.getStyleRangeAtOffset(event.start - 1);
 		    newStyle.length += event.length;
 		}
 
-		// pick up style right from new text
+		// Pick up style to the right of new text.
  		else if((0 <= event.start) &&
 			event.length < this.txtPad.getCharCount && 
 			event.start + event.length < this.txtPad.getCharCount && 
@@ -851,11 +848,11 @@ public class GUI
 		    newStyle.start = event.start;
 		    newStyle.length += event.length;
 		}
- 		else
- 		    return;
+ 		else return;
 
+                char[] dayName = (cast(Data)txtPad.getData).get("dayname");
 		this.txtPad.replaceStyleRanges(newStyle.start, newStyle.length, [newStyle]);
-		Storage.setCategoryRanges(null, styleRangesToCategoryRanges(this.txtPad.getStyleRanges));
+		Storage.setCategoryRanges(dayName, styleRangesToCategoryRanges(this.txtPad.getStyleRanges));
 	    }
 	});
     }
@@ -870,7 +867,7 @@ public class GUI
 	Composite parent = textPad.getParent;
 
 	// Remove previous search results.
-	hideSearchChildren(parent);
+	disposeSearchChildren(parent);
 
 	// Draw text input one line high.
 	GridData gdFind = new GridData(DWT.FILL, DWT.FILL, true, true);
@@ -1019,7 +1016,7 @@ public class GUI
 
     /*
       Enable or disable text pad pop-up menu depending on current selection
-      and style at caret offset
+      and style at caret offset.
      */
     private void addTextPadMenuDetectListener(StyledText text)
     {
@@ -1035,15 +1032,14 @@ public class GUI
 
 	    public void menuDetected(MenuDetectEvent event)
 	    {
-		// No tagging in notes, because there's no global search.
-		if(0 <= Integer.toInt((cast(Data)txtPad.getData).get("noteid")))
-		{
+                if(!this.txtPad.getEditable)
+                {
 		    this.txtPad.setMenu(null);
 		    return;
-		}
+                }
 
-		// Only today's text is editable.
-		if(!this.txtPad.getEditable)
+		// No tagging in notes, because there's no global search.
+		if(0 < (cast(Data)txtPad.getData).get("noteid").length)
 		{
 		    this.txtPad.setMenu(null);
 		    return;
@@ -1405,7 +1401,7 @@ public class GUI
 	Composite parent = textPad.getParent;
 
 	// Remove previous search results.
-	hideSearchChildren(parent);
+	disposeSearchChildren(parent);
 
 	GridData gdSearch = new GridData(DWT.FILL, DWT.FILL, true, true);
 	uint widgetHeight = parent.getSize.y / 2;
@@ -1489,16 +1485,13 @@ public class GUI
 
 		    saveText;
 
-		    if(getTodayFileName == dayName) txtPad.setEditable(true);
-		    else txtPad.setEditable(false);
-
 		    this.cal.setYear(date.year);
 		    this.cal.setMonth(date.month - 1);
 		    this.cal.setDay(date.day);
 		    markCalendarDays(this.cal);
 
 		    txtPad.setText(Storage.getText(this.cal));
-		    txtPad.setData(new Data("noteid", "-1"));
+		    txtPad.setData(new Data("dayname", dateStr(this.cal)));
 		    txtPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges(this.cal)));
 
 		    // Highlight matching keywords and scroll to view.
@@ -1619,7 +1612,7 @@ public class GUI
 	    {
 		if(this.txtPad.isDisposed) this.txtPad = getTextPad;
 
-		hideSearchChildren(this.txtPad.getParent);
+		disposeSearchChildren(this.txtPad.getParent);
 		saveText;
 		char[] noteID = (cast(Data)this.noteTxt.getData).get("id");
 		this.txtPad.setText(Storage.noteContent(Integer.toInt(noteID)));
@@ -1627,7 +1620,7 @@ public class GUI
 		// Set note ID in text pad to real note ID so note is saved
 		// next time saveText is called.
 		this.txtPad.setData(new Data("noteid", (noteID)));
-		this.txtPad.setEditable(true);
+                this.txtPad.setEditable(true);
 	    }
 	});
     }
@@ -1644,7 +1637,7 @@ public class GUI
 	textPad.setFocus;
 	setFont(textPad, FONT_SIZE_1, DWT.NONE);
 	textPad.setText(Storage.getText);
-	textPad.setData(new Data("noteid", "-1"));
+	textPad.setData(new Data("dayname", dateStr(today)));
 	textPad.setStyleRanges(categoryRangesToStyleRanges(Storage.getCategoryRanges));
 	textPad.setLayoutData(rightData);
 	textPad.setKeyBinding(DWT.MOD1 + 'A', ST.SELECT_ALL);
@@ -2381,10 +2374,10 @@ public class GUI
 	    }
 	});
 
-	addCalendarListener(calendar);
-	addCalendarMenuDetectListener(calendar);
-	addTextPadListeners(textPad, calendar);
-	addTextSearchKeyListener(rightComposite, textSearch, catEditList, calendar);
+        addCalendarListener(calendar);
+        addCalendarMenuDetectListener(calendar);
+        addTextPadListeners(textPad, calendar);
+        addTextSearchKeyListener(rightComposite, textSearch, catEditList, calendar);
 
 	setShellSize(shell);
 	shell.layout;

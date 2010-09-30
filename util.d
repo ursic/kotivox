@@ -320,13 +320,29 @@ char[] randStr(int strLen = 8)
 
 
 /*
+  Serializes two-dimensional array of ints into string.
+ */
+char[] serialize(int[][] array)
+{
+    char[] result;
+    foreach(row; array)
+    {
+        foreach(column; row)
+            result ~= Integer.toString(column);
+    }
+    return result;
+}
+
+
+
+/*
   Returns digest of str.
  */
 char[] digest(char[] str)
 {
     Sha512 digest = new Sha512;
     digest.update(cast(ubyte[])str);
-    return digest.hexDigest();
+    return digest.hexDigest;
 }
 
 

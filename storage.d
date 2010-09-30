@@ -40,6 +40,7 @@ private class Day
 {
     private char[] name;
     private char[] text;
+    private char[] origDigest;
 
     // [0] - start of category
     // [1] - length of category
@@ -52,12 +53,21 @@ private class Day
     {
 	this.name = name;
 	this.text = text;
+	this.digest;
+    }
+
+    /*
+      Digest text and category ranges for comparison later.
+     */
+    private void digest()
+    {
+        this.origDigest = util.digest(this.text ~ serialize(this.categoryRanges));
     }
 
     /*
       Decrypt user days.
      */
-    private static void loadDays()
+    private static void load()
     {
 	// Gather all day files for this user.
         days = null;
@@ -81,15 +91,20 @@ private class Day
     {
 	if(dayExists(dayName))
 	{
-	    foreach(Day d; days)
+	    foreach(d; days)
 		if(d.name == dayName)
 		{
 		    d.text = text;
 		    break;
 		}
 	}
-	else
-	    days ~= new Day(dayName, text);
+        else
+        {
+            // Invalidate digest so that it gets saved.
+            Day day = new Day(dayName, text);
+            day.origDigest = "";
+            days ~= day;
+        }
     }
 
     private static char[] dayGetText(char[] dayName)
@@ -116,6 +131,80 @@ private class Day
 	    if(dayName == day.name) return day.categoryRanges;
 
 	return null;
+    }
+
+
+    /*
+      Store encrypted category ranges into file.
+    */
+    private bool saveCategoryRanges()
+    {
+        int[][] catRanges = this.categoryRanges;
+        char[] catRangesFileName = Auth.userDirPath ~ this.name ~ USER_CATEGORY_RANGES_FILE_EXTENSION;
+
+        // No category ranges, remove file.
+        if(catRanges.length <= 0)
+        {
+            FilePath catRangesFile = new FilePath(catRangesFileName);
+            if(catRangesFile.exists) catRangesFile.remove;
+
+            return false;
+        }
+
+        char[] rangesTxt;
+        int i = 0;
+        foreach(c; catRanges)
+        {
+            rangesTxt ~= Integer.toString(i++) ~ " ";
+            rangesTxt ~= Integer.toString(c[0]) ~ " ";
+            rangesTxt ~= Integer.toString(c[1]) ~ " ";
+            rangesTxt ~= Integer.toString(c[2]) ~ "\n";
+        }
+
+        k_encrypt_from_string(rangesTxt,
+                              catRangesFileName,
+                              Auth.cipherKey);
+
+        return true;
+    }
+
+
+    private static void save()
+    {
+        char[] textFilePath;
+        char[] text;
+        int next;
+
+        foreach(day; days)
+        {
+            next = 0;
+
+            textFilePath = Auth.userDirPath ~ day.name ~ USER_DAY_FILE_EXTENSION;
+
+            // Remove existing text file if no more text.
+            text = Day.dayGetText(day.name);
+            if(0 == text.length)
+            {
+                FilePath textFile = new FilePath(textFilePath);
+                if(textFile.exists) textFile.remove;
+
+                next++;
+            }
+
+            if(!day.saveCategoryRanges) next++;
+
+            if(2 == next) continue;
+
+            // Unchanged.
+            char[] digest = day.origDigest;
+            day.digest;
+            if(digest == day.origDigest) continue;
+
+            // Store encrypted text into file.
+            k_encrypt_from_string(text,
+                                  textFilePath,
+                                  Auth.cipherKey);
+        }
     }
 }
 
@@ -183,7 +272,7 @@ private class Category
     /*
       Encrypt categories into file.
      */
-    private static void saveCategories()
+    private static void save()
     {
 	char[] content;
 	foreach(Category c; categories)
@@ -218,7 +307,7 @@ private class Category
     /*
       Decrypt user categories.
      */
-    private static void loadCategories()
+    private static void load()
     {
 	// Does categories file exist?
 	char[] filename = Auth.userDirPath ~ USER_CATEGORIES_FILE;
@@ -237,7 +326,7 @@ private class Category
     }
 
     /*
-      Return name of category with id.
+      Return name of category with ID.
      */
     private static char[] categoryName(int id)
     {
@@ -357,7 +446,7 @@ private class SearchResultPage
 	int start = -1;
 	int end = -1;
 	char[] title;
-	foreach(range; Day.getCategoryRanges(day.name))
+	foreach(range; day.categoryRanges)
 	{
 	    int bold = range[2];
 	    // At category title.
@@ -490,8 +579,7 @@ private class SearchResultPage
 			resultPages ~= new SearchResultPage(getNextIndex, matches);
 			content = result;
 		    }
-		    else
-			content ~= result;
+		    else content ~= result;
 
 		    result = "";
 		}
@@ -622,7 +710,7 @@ private class Note
     /*
       Encrypt notes into files.
      */
-    private static void saveNotes()
+    private static void save()
     {
 	char[] noteFiles;
 	foreach(note; notes)
@@ -664,7 +752,7 @@ private class Note
     /*
       Decrypt notes from files.
      */
-    private static void loadNotes()
+    private static void load()
     {
         notes = null;
 	foreach(file; (new FileScan)(Auth.userDirPath, NOTE_FILE_EXTENSION).files)
@@ -930,7 +1018,7 @@ private class Chain
     /*
       Encrypt chains into files.
      */
-    private static void saveChains()
+    private static void save()
     {
 	char[] chainFiles;
 	foreach(chain; chains)
@@ -943,6 +1031,7 @@ private class Chain
 		// Delete chain file if exists.
 		FilePath chainFile = new FilePath(chainFilePath);
 		if(chainFile.exists) chainFile.remove;
+
 		continue;
 	    }
 
@@ -967,6 +1056,7 @@ private class Chain
 	    k_encrypt_from_string(content,
 				  chainFilePath,
 				  Auth.cipherKey);
+            chain.changed = false;
 	}
 
 	// Remove obsolete chain files.
@@ -978,7 +1068,7 @@ private class Chain
     /*
       Decrypt chains from files.
      */
-    private static void loadChains()
+    private static void load()
     {
         chains = null;
 	foreach(file; (new FileScan)(Auth.userDirPath, CHAIN_FILE_EXTENSION).files)
@@ -1023,46 +1113,27 @@ public class Storage
     /*
       Save today's plaintext.
      */
-    static public void saveText(in char[] text)
+    public static void saveText(char[] dayName, in char[] text)
     {
-	Day.daySetText(getTodayFileName, text);
+	Day.daySetText(dayName, text);
     }
 
     /*
       Encrypt today's text to file.
      */
-    static public void saveFinal()
+    public static void saveFinal()
     {
-	Category.saveCategories;
-	saveCategoryRanges;
-	Note.saveNotes;
-	Chain.saveChains;
-
-	char[] textFilePath = Auth.userDirPath ~ getTodayFileName ~ USER_DAY_FILE_EXTENSION;
-
-	// Remove existing text file if no more new text.
-	char[] text = Day.dayGetText(getTodayFileName);
-	if(0 == text.length)
-	{
-	    FilePath textFile = new FilePath(textFilePath);
-	    if(textFile.exists)	textFile.remove;
-
-	    return;
-	}
-
-	saveText(text);
-
-	// Store encrypted text in file.
-	k_encrypt_from_string(Day.dayGetText(getTodayFileName),
-			      textFilePath,
-			      Auth.cipherKey);
+        Day.save;
+	Category.save;
+	Note.save;
+	Chain.save;
     }
 
     /*
       Get decrypted text for date.
       Return today's text if date is null.
     */
-    static public char[] getText(DateTime date = null)
+    public static char[] getText(DateTime date = null)
     {
 	char[] text = "";
 	char[] dayName = dateStr(date);
@@ -1070,38 +1141,6 @@ public class Storage
 	    text = Day.dayGetText(dayName);
 
 	return text;
-    }
-
-    /*
-      Encrypt category ranges into file.
-     */
-    private static void saveCategoryRanges()
-    {
-	int[][] catRanges = Day.getCategoryRanges(getTodayFileName);
-	char[] catRangesFileName = Auth.userDirPath ~ getTodayFileName ~ USER_CATEGORY_RANGES_FILE_EXTENSION;
-	// No category ranges for today, remove file.
-	if(catRanges.length <= 0)
-	{
-	    FilePath catRangesFile = new FilePath(catRangesFileName);
-	    if(catRangesFile.exists) catRangesFile.remove;
-
-	    return;
-	}
-
-	char[] rangesTxt;
-	int i = 0;
-	foreach(c; catRanges)
-	{
-	    rangesTxt ~= Integer.toString(i++) ~ " ";
-	    rangesTxt ~= Integer.toString(c[0]) ~ " ";
-	    rangesTxt ~= Integer.toString(c[1]) ~ " ";
-	    rangesTxt ~= Integer.toString(c[2]) ~ "\n";
-	}
-
-	// Encrypt category ranges into file.
-	k_encrypt_from_string(rangesTxt,
-			      catRangesFileName,
-			      Auth.cipherKey);
     }
 
     /*
@@ -1130,32 +1169,32 @@ public class Storage
 	}
     }
 
-    static public char[][] getCategory()
+    public static char[][] getCategory()
     {
 	return Category.get;
     }
 
-    static public int addCategory(char[] name)
+    public static int addCategory(char[] name)
     {
 	return Category.add;
     }
 
-    static public void renameCategory(int id, char[] name)
+    public static void renameCategory(int id, char[] name)
     {
 	Category.categoryName(id, name);
     }
 
-    static public void removeCategory(int id)
+    public static void removeCategory(int id)
     {
 	Category.remove(id);
     }
 
-    static public char[] getCategoryName(int id)
+    public static char[] getCategoryName(int id)
     {
 	return Category.categoryName(id);
     }
 
-    static public int getCategoryID(char[] name)
+    public static int getCategoryID(char[] name)
     {
 	return Category.getID(name);
     }
@@ -1163,31 +1202,31 @@ public class Storage
     /*
       Set category ranges for date.
      */
-    static public void setCategoryRanges(DateTime date, int[][] ranges)
+    public static void setCategoryRanges(char[] dayName, int[][] ranges)
     {
-	Day.setCategoryRanges(dateStr(date), ranges);
+	Day.setCategoryRanges(dayName, ranges);
     }
 
     /*
       Return array of category ranges for given date.
      */
-    static public int[][] getCategoryRanges(DateTime date = null)
+    public static int[][] getCategoryRanges(DateTime date = null)
     {
 	return Day.getCategoryRanges(dateStr(date));
     }
 
-    static public void loadUserData()
+    public static void loadUserData()
     {
 	if(!Auth.isUserLoggedIn) return;
 
-	Day.loadDays;
-	Category.loadCategories;
+	Day.load;
+	Category.load;
 	loadCategoryRanges;
-	Note.loadNotes;
-	Chain.loadChains;
+	Note.load;
+	Chain.load;
     }
 
-    static public char[] search(char[] keywords, int[] categories)
+    public static char[] search(char[] keywords, int[] categories)
     {
 	SearchResultPage.keywords(keywords);
  	if(keywords.length < SEARCH_KEYWORDS_MIN_LENGTH)
@@ -1201,7 +1240,7 @@ public class Storage
     /*
       Return requested result page
      */
-    static public char[] getSearchResultPage(int pageNum = 0)
+    public static char[] getSearchResultPage(int pageNum = 0)
     {
 	foreach(page; SearchResultPage.resultPages)
 	{
@@ -1225,7 +1264,7 @@ public class Storage
     /*
       Return array of day numbers of the month given calendar is set to
      */
-    static public int[] getDayNumbers(DateTime date)
+    public static int[] getDayNumbers(DateTime date)
     {
 	int[] days;
 	foreach(day; Day.days)
@@ -1240,108 +1279,108 @@ public class Storage
 	return days;
     }
 
-    static public int addNote()
+    public static int addNote()
     {
 	return Note.add;
     }
 
-    static public void removeNote(int id)
+    public static void removeNote(int id)
     {
 	Note.remove(id);
     }
 
-    static public char[] noteName(int id)
+    public static char[] noteName(int id)
     {
 	return Note.noteName(id);
     }
 
-    static public void noteName(int id, char[] name)
+    public static void noteName(int id, char[] name)
     {
 	Note.noteName(id, name);
     }
 
 
-    static public void noteContent(int id, char[] content)
+    public static void noteContent(int id, char[] content)
     {
 	Note.noteContent(id, content);
     }
 
-    static public char[] noteContent(int id)
+    public static char[] noteContent(int id)
     {
 	return Note.noteContent(id);
     }
 
-    static public char[][int] getNotes()
+    public static char[][int] getNotes()
     {
 	return Note.getNotes;
     }
 
-    static public int addChain()
+    public static int addChain()
     {
 	return Chain.add;
     }
 
-    static public void removeChain(int id)
+    public static void removeChain(int id)
     {
 	Chain.remove(id);
     }
 
-    static public char[][int] getChains()
+    public static char[][int] getChains()
     {
 	return Chain.getChains;
     }
 
-    static public char[] chainName(int id)
+    public static char[] chainName(int id)
     {
 	return Chain.chainName(id);
     }
 
-    static public void chainName(int id, char[] name)
+    public static void chainName(int id, char[] name)
     {
 	Chain.chainName(id, name);
     }
 
-    static public char[] chainDesc(int id)
+    public static char[] chainDesc(int id)
     {
 	return Chain.chainDesc(id);
     }
 
-    static public void chainDesc(int id, char[] desc)
+    public static void chainDesc(int id, char[] desc)
     {
 	Chain.chainDesc(id, desc);
     }
 
-    static public void addChainDate(int chainID, int date)
+    public static void addChainDate(int chainID, int date)
     {
 	Chain.addDate(chainID, date);
     }
 
-    static public void removeChainDate(int chainID, int date)
+    public static void removeChainDate(int chainID, int date)
     {
 	Chain.removeDate(chainID, date);
     }
 
-    static public Date getChainStartDate(int chainID)
+    public static Date getChainStartDate(int chainID)
     {
 	return Chain.getStartDate(chainID);
     }
 
-    static public int[] getChainDates(int chainID, int year)
+    public static int[] getChainDates(int chainID, int year)
     {
 	return Chain.getDates(chainID, year);
     }
 
-    static public void lockChain(int chainID)
+    public static void lockChain(int chainID)
     {
 	Chain.lock(chainID);
     }
 
-    static public void unlockChain(int chainID)
+    public static void unlockChain(int chainID)
     {
 	Chain.unlock(chainID);
     }
 
-    static public bool isChainLocked(int chainID)
+    public static bool isChainLocked(int chainID)
     {
 	return Chain.isLocked(chainID);
     }
