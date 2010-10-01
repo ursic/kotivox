@@ -40,12 +40,13 @@ private class Day
 {
     private char[] name;
     private char[] text;
-    private char[] origDigest;
+    private char[] textDigest;
 
     // [0] - start of category
     // [1] - length of category
     // [2] - 0 for normal text, 1 for bold - indicating category title
     private int[][] categoryRanges;
+    private char[] catRangesDigest;
 
     private static Day[] days;
 
@@ -61,7 +62,8 @@ private class Day
      */
     private void digest()
     {
-        this.origDigest = util.digest(this.text ~ serialize(this.categoryRanges));
+        this.textDigest = util.digest(this.text);
+        this.catRangesDigest = util.digest(serialize(this.categoryRanges));
     }
 
     /*
@@ -75,7 +77,11 @@ private class Day
 	{
 	    // Decrypt text and store it.
 	    char[] textOut = k_decrypt_to_string(file.path ~ file.file, Auth.cipherKey);
-	    days ~= new Day(file.name, textOut);
+
+            Day day = new Day(file.name, textOut);
+	    days ~= day;
+            day.loadCategoryRanges;
+            day.digest;
 	}
     }
 
@@ -100,9 +106,9 @@ private class Day
 	}
         else
         {
-            // Invalidate digest so that it gets saved.
+            // Invalidate digest so that new day gets saved.
             Day day = new Day(dayName, text);
-            day.origDigest = "";
+            day.textDigest = "";
             days ~= day;
         }
     }
@@ -133,27 +139,27 @@ private class Day
 	return null;
     }
 
-
     /*
       Store encrypted category ranges into file.
     */
     private bool saveCategoryRanges()
     {
-        int[][] catRanges = this.categoryRanges;
         char[] catRangesFileName = Auth.userDirPath ~ this.name ~ USER_CATEGORY_RANGES_FILE_EXTENSION;
 
         // No category ranges, remove file.
-        if(catRanges.length <= 0)
+        if(this.categoryRanges.length <= 0)
         {
             FilePath catRangesFile = new FilePath(catRangesFileName);
             if(catRangesFile.exists) catRangesFile.remove;
-
             return false;
         }
 
+        // Have ranges changed since loading?
+        if(this.catRangesDigest == util.digest(serialize(this.categoryRanges))) return false;
+
         char[] rangesTxt;
         int i = 0;
-        foreach(c; catRanges)
+        foreach(c; this.categoryRanges)
         {
             rangesTxt ~= Integer.toString(i++) ~ " ";
             rangesTxt ~= Integer.toString(c[0]) ~ " ";
@@ -168,42 +174,58 @@ private class Day
         return true;
     }
 
+    /*
+      Decrypt user category ranges.
+     */
+    private void loadCategoryRanges()
+    {
+        // Decrypt possible category ranges and store them.
+        FilePath catRangesFile = new FilePath(Auth.userDirPath ~ this.name ~ USER_CATEGORY_RANGES_FILE_EXTENSION);
+        if(catRangesFile.exists)
+        {
+            char[] ranges = k_decrypt_to_string(catRangesFile.path ~ catRangesFile.file, Auth.cipherKey);
+            int[][] catRanges;
+            foreach(char[] range; parseLines(ranges))
+            {
+                char[][] rangeVals = Txt.split(range, " ");
+		
+                int start = Integer.toInt(rangeVals[0]);
+                int length = Integer.toInt(rangeVals[1]);
+                int fontStyle = Integer.toInt(rangeVals[2]);
+
+                catRanges ~= [start, length, fontStyle];
+            }
+            this.categoryRanges = catRanges;
+        }
+    }
 
     private static void save()
     {
         char[] textFilePath;
         char[] text;
-        int next;
 
         foreach(day; days)
         {
-            next = 0;
+            day.saveCategoryRanges;
 
             textFilePath = Auth.userDirPath ~ day.name ~ USER_DAY_FILE_EXTENSION;
 
             // Remove existing text file if no more text.
-            text = Day.dayGetText(day.name);
+            text = day.text;
             if(0 == text.length)
             {
                 FilePath textFile = new FilePath(textFilePath);
                 if(textFile.exists) textFile.remove;
-
-                next++;
+                continue;
             }
 
-            if(!day.saveCategoryRanges) next++;
+            // Has text changed since loading?
+            if(day.textDigest == util.digest(day.text)) continue;
 
-            if(2 == next) continue;
-
-            // Unchanged.
-            char[] digest = day.origDigest;
-            day.digest;
-            if(digest == day.origDigest) continue;
-
-            // Store encrypted text into file.
             k_encrypt_from_string(text,
                                   textFilePath,
                                   Auth.cipherKey);
+            day.digest;
         }
     }
 }
@@ -1143,32 +1165,6 @@ public class Storage
 	return text;
     }
 
-    /*
-      Decrypt user category ranges.
-     */
-    private static void loadCategoryRanges()
-    {
-	// Gather all available category ranges.
-	foreach(file; (new FileScan)(Auth.userDirPath, USER_CATEGORY_RANGES_FILE_EXTENSION).files)
-	{
-	    // Decrypt category ranges into array.
-	    char[] ranges = k_decrypt_to_string(file.path ~ file.file, Auth.cipherKey);
-
-	    int[][] catRanges;
-	    foreach(char[] range; parseLines(ranges))
-	    {
-		char[][] rangeVals = Txt.split(range, " ");
-		
-		int start = Integer.toInt(rangeVals[0]);
-		int length = Integer.toInt(rangeVals[1]);
-		int fontStyle = Integer.toInt(rangeVals[2]);
-
-		catRanges ~= [start, length, fontStyle];
-	    }
-	    Day.setCategoryRanges(file.name, catRanges);
-	}
-    }
-
     public static char[][] getCategory()
     {
 	return Category.get;
@@ -1221,7 +1217,6 @@ public class Storage
 
 	Day.load;
 	Category.load;
-	loadCategoryRanges;
 	Note.load;
 	Chain.load;
     }
