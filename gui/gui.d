@@ -990,16 +990,14 @@ public class GUI
     }
 
 
-    private void addTextPadKeyListener(StyledText text, DateTime cal)
+    private void addTextPadKeyListener(StyledText text)
     {
-	text.addKeyListener(new class(text, cal) KeyListener
+	text.addKeyListener(new class(text) KeyListener
 	{
 	    StyledText txtPad;
-	    DateTime calendar;
-	    this(StyledText t, DateTime d)
+	    this(StyledText t)
 	    {
 		this.txtPad = getTextPad;
-		this.calendar = cal;
 	    }
 	    public void keyPressed(KeyEvent event)
 	    {
@@ -2101,7 +2099,7 @@ public class GUI
 	    // Canvas seems to steal focus.
 	    public void mouseUp(MouseEvent event)
 	    {
-		    this.chainTxt.setFocus;
+                this.chainTxt.setFocus;
 	    }
 	});
     }
@@ -2283,7 +2281,7 @@ public class GUI
     private void addTextPadListeners(StyledText textPad, DateTime calendar)
     {
 	addTextPadExtendedModifyListener(textPad);
-	addTextPadKeyListener(textPad, calendar);
+	addTextPadKeyListener(textPad);
 	addTextPadMenuDetectListener(textPad);
 	addTextMenuListener;
     }
