@@ -153,8 +153,7 @@ public class GUI
 		text.setStyleRanges(start, text.getLine(currLineUp).length + inc, null, null);
 		lastUp = currLineUp;
 	    }
-	    else
-		aboveClear = true;
+	    else aboveClear = true;
 	}
 
 	// remove style by character increments below current line
@@ -162,8 +161,7 @@ public class GUI
 	{
 	    if(text.getStyleRangeAtOffset(currOffsetDown))
  		text.setStyleRanges(currOffsetDown, 1, null, null);
- 	    else
- 		belowClear = true;
+ 	    else belowClear = true;
 	}
 
 	return lastUp = clearStyle(text, --currLineUp, ++currOffsetDown, aboveClear, belowClear, lastUp);
@@ -1387,6 +1385,8 @@ public class GUI
 		this.txtPad.setStyleRange(styleTitle);
 		this.txtPad.setStyleRange(styleBody);
 		Storage.setCategoryRanges(null, styleRangesToCategoryRanges(this.txtPad.getStyleRanges));
+
+                this.txtPad.redraw;
 	    }
 	});
     }
