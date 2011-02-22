@@ -377,7 +377,7 @@ private class Category
     {
 	if(0 == catRetrCount)
 	{
-	    // reset category count
+	    // Reset category count.
 	    catRetrCount = categories.length;
 	    return null;
 	}
