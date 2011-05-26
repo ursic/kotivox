@@ -50,6 +50,25 @@ private class Day
 
     private static Day[] days;
 
+    private static Day[] sortByName()
+    {
+      char[][] names;
+      Day[] sortedDays;
+      foreach(day; days)
+        names ~= day.name;
+
+      sort(names);
+
+      foreach(nm; names)
+      {
+        foreach(day; days)
+          if(day.name == nm)
+            sortedDays ~= day;
+      }
+      
+      return sortedDays;
+    }
+
     this(char[] name, char[] text)
     {
 	this.name = name;
@@ -536,7 +555,8 @@ private class SearchResultPage
 	char[] content;
 	int appendLength = SEARCH_RESULT_LENGTH / 2;
 	uint numResults;
-	foreach(day; Day.days.dup.reverse)
+
+	foreach(day; Day.sortByName.reverse)
 	{
 	    int end = day.text.length;
 	    int location = 0;
